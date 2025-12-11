@@ -201,8 +201,60 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        int m = pattern.length();
+        int n = text.length();
+        if (m == 0 || n == 0 || m > n){ // This is an edge case, if pattern or the text (or both) is/are empty
+            return "";
+        }
+        int R = 65536; // ASCII character set. 
+        int[] badCharacter = new int[R];
+        for (int i = 0; i < R; i++) {
+            badCharacter[i] = m;
+        }
+        // (m - 1 - i)
+        for (int i = 0; i < m - 1; i++){
+            badCharacter[pattern.charAt(i)] = m - 1 - i;
+        }
+        
+        List<Integer> match = new ArrayList<>();
+        
+        int i = 0;
+        
+        while (i <= (n - m)){
+            int j = m - 1;
+            
+            // Go backward until we find a match
+            while (j >= 0 && pattern.charAt(j) == text.charAt(i + j)){
+                j--;
+            }
+            
+            if (j < 0) { // Match found.
+                match.add(i);
+                
+                if (i + m < n) {
+                    i += badCharacter[text.charAt(i + m)];
+                }
+                else{
+                    i++;
+                }
+            }
+            else{ // Match NOT found.
+                int badChar = text.charAt(i + j);
+                int badCharacterShiftAmount = badCharacter[badChar];
+                
+                int shift = Math.max(1, badCharacterShiftAmount - (m - 1 - j));
+                i += shift;
+            }
+            
+            
+        }
+        
+        // Return matches in wanted format
+        return match.stream()
+                  .map(String::valueOf)
+                  .collect(java.util.stream.Collectors.joining(","));
+        
+        // throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
     }
 }
 
