@@ -206,7 +206,7 @@ class BoyerMoore extends Solution {
         if (m == 0 || n == 0 || m > n){ // This is an edge case, if pattern or the text (or both) is/are empty
             return "";
         }
-        int R = 65536; // ASCII character set. 
+        int R = 65536; // unicode character set. 
         int[] badCharacter = new int[R];
         for (int i = 0; i < R; i++) {
             badCharacter[i] = m;
@@ -274,8 +274,85 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        int n = text.length();
+        int m = pattern.length();
+        
+        // Edge cases where pattern or text or both are empty.
+        if (m == 0) return (n == 0) ? "" : ""; 
+        if (n == 0 || m > n) return "";
+        
+        int R = 65536; // unicode character set.
+        
+        int[] rightMostIndex = new int[R];
+        
+        for (int i = 0; i < R; i++) {
+            rightMostIndex[i] = -1;
+        }
+        
+        for (int i = 0; i < m; i++) {
+            if (pattern.charAt(i) < R) {
+                rightMostIndex[pattern.charAt(i)] = i;
+            }
+        }
+        
+        List<Integer> matches = new ArrayList<>();
+        int i = 0;
+        
+        int center = m / 2;
+        
+        while (i <= n - m) {            
+            boolean match = true;
+            
+            if (text.charAt(i + center) != pattern.charAt(center)) {
+                match = false;
+            }
+            else{ // If the character at the middle matched
+                int left = center - 1;
+                int right = center + 1;
+                while (left >= 0 || right < m) {                    
+                    if (left >= 0){
+                        if (text.charAt(i + left) != pattern.charAt(left)) {
+                            match = false;
+                            break;
+                        }
+                        left--;
+                    }
+                    
+                    if (right < m) {
+                        if (text.charAt(i + right) != pattern.charAt(right)) {
+                            match  = false;
+                            break;
+                        }
+                        right++;
+                    }
+                }
+            }
+            if (match) {
+                matches.add(i);
+            }
+            
+            if (i + m < n) {
+                char nextChar = text.charAt(i + m);
+                
+                int shift;
+                
+                if (nextChar < R) {
+                    int posInPattern = rightMostIndex[nextChar];
+                    // pattern lenght - char position in the pattern
+                    shift = m - posInPattern;
+                }else{
+                    shift = 1; // fallback
+                }
+                i += shift;
+            }else{
+                break; // end of text
+            }
+            
+        }
+        return matches.stream()
+                .map(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(","));
+        // throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
     }
 }
 
