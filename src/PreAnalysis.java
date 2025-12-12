@@ -39,11 +39,7 @@ public abstract class PreAnalysis {
  */
 class StudentPreAnalysis extends PreAnalysis {
     
-    @Override
-    public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
+     // Example considerations:
         // - If pattern is very short, Naive might be fastest
         // - If pattern has repeating prefixes, KMP is good
         // - If pattern is long and text is very long, RabinKarp might be good
@@ -51,16 +47,93 @@ class StudentPreAnalysis extends PreAnalysis {
         //
         // For now, this returns null which means "run all algorithms"
         // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+    @Override
+    public String chooseAlgorithm(String text, String pattern) {
+        // TODO: Students should implement their analysis logic here
+
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Special trivial cases
+        if (m == 0) return "KMP";            // KMP consistently fastest for empty pattern
+        if (m > n) return "GoCrazy";         // GoCrazy was the winner in this scenario
+
+        int alphabet = estimateAlphabet(text);
+        int lps = longestPrefixSuffix(pattern);
+        boolean highlyRepeated = (lps >= m / 2);
+
+        // Very short patterns: naive consistently dominates
+        if (m <= 3) return "Naive";
+
+        // Highly repetitive patterns: KMP excels
+        if (highlyRepeated) return "KMP";
+
+        // Large text handling
+        if (n >= 5000) {
+            if (alphabet > 16) return "BoyerMoore";  // BM best for large/random/alphabet-rich texts
+            if (m >= 20) return "RabinKarp";         // RK wins some long-pattern cases
+            
+            return "BoyerMoore";                     // default BM in large texts
+        }
+
+        // Medium-length patterns with large-ish alphabet → BM tends to win
+        if (m >= 10 && alphabet > 12) return "BoyerMoore";
+
+        // Moderate pattern repetition but not extreme → KMP is solid
+        if (lps > 0 && m < 20) return "KMP";
+
+        // Default fallback: Naive surprisingly wins most common small-medium tests
+        return "Naive";
     }
+        
     
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
-    }
+    return "This strategy chooses algorithms by examining the length of the text and pattern, "
+         + "how repetitive the pattern is, and how many different characters appear in the text. "
+         + "Based on these characteristics, it selects the algorithm that tends to perform the fastest "
+         + "in situations similar to the ones observed during testing.";
 }
 
+
+private int estimateAlphabet(String text) {
+        boolean[] seen = new boolean[256];
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            int c = text.charAt(i) & 0xFF;
+            if (!seen[c]) {
+                seen[c] = true;
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int longestPrefixSuffix(String pattern) {
+        int m = pattern.length();
+        if (m == 0) return 0;
+
+        int[] lps = new int[m];
+        int len = 0;
+        int i = 1;
+
+        while (i < m) {
+            if (pattern.charAt(i) == pattern.charAt(len)) {
+                lps[i] = ++len;
+                i++;
+            } else {
+                if (len != 0) {
+                    len = lps[len - 1];
+                } else {
+                    lps[i] = 0;
+                    i++;
+                }
+            }
+        }
+
+        return lps[m - 1];
+    }
 
 /**
  * Example implementation showing how pre-analysis could work
