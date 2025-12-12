@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 class Naive extends Solution {
     static {
@@ -190,7 +192,9 @@ class RabinKarp extends Solution {
  * TODO: Implement Boyer-Moore algorithm
  * This is a homework assignment for students
  */
+
 class BoyerMoore extends Solution {
+
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
@@ -203,58 +207,82 @@ class BoyerMoore extends Solution {
     public String Solve(String text, String pattern) {
         int m = pattern.length();
         int n = text.length();
-        if (m == 0 || n == 0 || m > n){ // This is an edge case, if pattern or the text (or both) is/are empty
+        if (m == 0) {
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        if (n == 0 || m > n) {
             return "";
         }
-        int R = 65536; // unicode character set. 
-        int[] badCharacter = new int[R];
-        for (int i = 0; i < R; i++) {
-            badCharacter[i] = m;
+
+        Map<Character, Integer> badCharTable = new HashMap<>();
+
+        for (int i = 0; i < m; i++) {
+            badCharTable.put(pattern.charAt(i), i);
         }
-        // (m - 1 - i)
-        for (int i = 0; i < m - 1; i++){
-            badCharacter[pattern.charAt(i)] = m - 1 - i;
-        }
-        
+        int[] goodSuffixTable = preprocessGoodSuffix(pattern);
+
         List<Integer> match = new ArrayList<>();
-        
-        int i = 0;
-        
-        while (i <= (n - m)){
+        int s = 0;
+
+        while (s <= (n - m)) {
             int j = m - 1;
-            
-            // Go backward until we find a match
-            while (j >= 0 && pattern.charAt(j) == text.charAt(i + j)){
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
                 j--;
             }
-            
-            if (j < 0) { // Match found.
-                match.add(i);
-                
-                if (i + m < n) {
-                    i += badCharacter[text.charAt(i + m)];
-                }
-                else{
-                    i++;
-                }
+
+            if (j < 0) {
+                match.add(s);
+                s += goodSuffixTable[0];
+            } else {
+                char badChar = text.charAt(s + j);
+                int lastSeenPos = badCharTable.getOrDefault(badChar, -1);
+                int bcShift = j - lastSeenPos;
+                int gsShift = goodSuffixTable[j + 1];
+                s += Math.max(1, Math.max(bcShift, gsShift));
             }
-            else{ // Match NOT found.
-                int badChar = text.charAt(i + j);
-                int badCharacterShiftAmount = badCharacter[badChar];
-                
-                int shift = Math.max(1, badCharacterShiftAmount - (m - 1 - j));
-                i += shift;
-            }
-            
-            
         }
-        
-        // Return matches in wanted format
-        return match.stream()
-                  .map(String::valueOf)
-                  .collect(java.util.stream.Collectors.joining(","));
-        
-        // throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+
+        return indicesToString(match);
+    }
+
+
+    private int[] preprocessGoodSuffix(String pattern) {
+        int m = pattern.length();
+        int[] table = new int[m + 1];
+        int[] borderPos = new int[m + 1];
+        int i = m;
+        int j = m + 1;
+        borderPos[i] = j;
+        while (i > 0) {
+            while (j <= m && pattern.charAt(i - 1) != pattern.charAt(j - 1)) {
+                if (table[j] == 0) table[j] = j - i;
+                j = borderPos[j];
+            }
+            i--;
+            j--;
+            borderPos[i] = j;
+        }
+
+        j = borderPos[0];
+        for (i = 0; i <= m; i++) {
+            if (table[i] == 0) table[i] = j;
+            if (i == j) j = borderPos[j];
+        }
+
+        return table;
+    }
+
+
+    public String indicesToString(List<Integer> indices) {
+        if (indices.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < indices.size(); i++) {
+            sb.append(indices.get(i));
+            if (i < indices.size() - 1) sb.append(",");
+        }
+        return sb.toString();
     }
 }
 
@@ -276,84 +304,67 @@ class GoCrazy extends Solution {
     public String Solve(String text, String pattern) {
         int n = text.length();
         int m = pattern.length();
-        
-        // Edge cases where pattern or text or both are empty.
-        if (m == 0) return (n == 0) ? "" : ""; 
-        if (n == 0 || m > n) return "";
-        
-        int R = 65536; // unicode character set.
-        
-        int[] rightMostIndex = new int[R];
-        
-        for (int i = 0; i < R; i++) {
-            rightMostIndex[i] = -1;
-        }
-        
-        for (int i = 0; i < m; i++) {
-            if (pattern.charAt(i) < R) {
-                rightMostIndex[pattern.charAt(i)] = i;
+
+        // Handle empty pattern
+        if (m == 0) {
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
             }
+            return indicesToString(indices);
         }
-        
+
+        // Handle empty text or pattern longer than text
+        if (n == 0 || m > n) {
+            return "";
+        }
+
+        Map<Character, Integer> rightMostIndex = new HashMap<>();
+
+        for (int i = 0; i < m; i++) {
+            rightMostIndex.put(pattern.charAt(i), i);
+        }
+
         List<Integer> matches = new ArrayList<>();
         int i = 0;
-        
         int center = m / 2;
-        
-        while (i <= n - m) {            
+
+        while (i <= n - m) {
             boolean match = true;
-            
+
             if (text.charAt(i + center) != pattern.charAt(center)) {
                 match = false;
-            }
-            else{ // If the character at the middle matched
-                int left = center - 1;
-                int right = center + 1;
-                while (left >= 0 || right < m) {                    
-                    if (left >= 0){
-                        if (text.charAt(i + left) != pattern.charAt(left)) {
-                            match = false;
-                            break;
-                        }
-                        left--;
-                    }
-                    
-                    if (right < m) {
-                        if (text.charAt(i + right) != pattern.charAt(right)) {
-                            match  = false;
-                            break;
-                        }
-                        right++;
+            } else if (text.charAt(i + m - 1) != pattern.charAt(m - 1)) {
+                match = false;
+            } else if (text.charAt(i) != pattern.charAt(0)) {
+                match = false;
+            } else {
+                for (int j = 1; j < m - 1; j++) {
+                    if (j == center) continue;
+                    if (text.charAt(i + j) != pattern.charAt(j)) {
+                        match = false;
+                        break;
                     }
                 }
             }
+
             if (match) {
                 matches.add(i);
             }
-            
+
+
             if (i + m < n) {
                 char nextChar = text.charAt(i + m);
-                
-                int shift;
-                
-                if (nextChar < R) {
-                    int posInPattern = rightMostIndex[nextChar];
-                    // pattern lenght - char position in the pattern
-                    shift = m - posInPattern;
-                }else{
-                    shift = 1; // fallback
-                }
+
+                int posInPattern = rightMostIndex.getOrDefault(nextChar, -1);
+                int shift = m - posInPattern;
+
                 i += shift;
-            }else{
-                break; // end of text
+            } else {
+                break; // End of text
             }
-            
         }
-        return matches.stream()
-                .map(String::valueOf)
-                .collect(java.util.stream.Collectors.joining(","));
-        // throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+
+        return indicesToString(matches);
     }
 }
-
-
