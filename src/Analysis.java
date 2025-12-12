@@ -1,7 +1,9 @@
+
 import java.util.ArrayList;
 import java.util.List;
 
 class Naive extends Solution {
+
     static {
         SUBCLASSES.add(Naive.class);
         System.out.println("Naive registered");
@@ -33,6 +35,7 @@ class Naive extends Solution {
 }
 
 class KMP extends Solution {
+
     static {
         SUBCLASSES.add(KMP.class);
         System.out.println("KMP registered");
@@ -110,6 +113,7 @@ class KMP extends Solution {
 }
 
 class RabinKarp extends Solution {
+
     static {
         SUBCLASSES.add(RabinKarp.class);
         System.out.println("RabinKarp registered.");
@@ -187,10 +191,11 @@ class RabinKarp extends Solution {
 }
 
 /**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
+ * TODO: Implement Boyer-Moore algorithm This is a homework assignment for
+ * students
  */
 class BoyerMoore extends Solution {
+
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
@@ -201,17 +206,97 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Handle empty pattern - matches at every position (same as KMP/RabinKarp)
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If pattern longer than text, there are no matches
+        if (m > n) {
+            return "";
+        }
+
+        // ===== Preprocessing: Bad Character Table =====
+        // We use an array for last occurrence of each character (0..255)
+        int ALPHABET_SIZE = 256;
+        int[] last = new int[ALPHABET_SIZE];
+
+        // Initialize all characters as "not found"
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            last[i] = -1;
+        }
+
+        // Fill with last occurrence of each character in the pattern
+        for (int i = 0; i < m; i++) {
+            // & 0xFF makes sure we stay inside 0..255 even for Unicode chars
+            last[pattern.charAt(i) & 0xFF] = i;
+        }
+
+        // ===== Searching phase =====
+        int s = 0; // current shift of the pattern over text
+
+        while (s <= n - m) {
+            int j = m - 1;
+
+            // Move from right to left while characters match
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                // Full match at position s
+                indices.add(s);
+
+                // Shift the pattern so that the next character in the text
+                // aligns with its last occurrence in the pattern
+                if (s + m < n) {
+                    int nextCharIndex = text.charAt(s + m) & 0xFF;
+                    int lastOccur = last[nextCharIndex];
+                    // If lastOccur == -1, we move m+1; otherwise m - lastOccur
+                    s += m - (lastOccur >= 0 ? lastOccur : -1);
+                } else {
+                    // We are at the end of the text; just move by 1 and finish
+                    s += 1;
+                }
+            } else {
+                // Mismatch at position j
+                char badChar = text.charAt(s + j);
+                int lastOccur = last[badChar & 0xFF];
+
+                // How far to shift:
+                // j - lastOccur   if badChar appears in pattern
+                // j - (-1) = j+1  if it does not appear in pattern
+                int shift = j - lastOccur;
+
+                // Always shift at least 1
+                if (shift < 1) {
+                    shift = 1;
+                }
+
+                s += shift;
+            }
+        }
+
+        return indicesToString(indices);
     }
+
 }
 
 /**
- * TODO: Implement your own creative string matching algorithm
- * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
+ * TODO: Implement your own creative string matching algorithm This is a
+ * homework assignment for students Be creative! Try to make it efficient for
+ * specific cases
  */
 class GoCrazy extends Solution {
+
     static {
         SUBCLASSES.add(GoCrazy.class);
         System.out.println("GoCrazy registered");
@@ -226,5 +311,3 @@ class GoCrazy extends Solution {
         throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
     }
 }
-
-
