@@ -310,6 +310,9 @@ If I had to do this again, I'd start earlier and test more thoroughly from the b
 2. **CLRS textbook** - Chapter 32 (String Matching)
 3. **Wikipedia** - String searching algorithm (for broader context)
 4. **AI Tools (ChatGPT, Gemini, Claude)** - For concept explanation, debugging help, and code feedback
+5. **GeeksforGeeks:**
+   - KMP Algorithm: https://www.geeksforgeeks.org/kmp-algorithm-for-pattern-searching/
+   - Boyer-Moore Algorithm: https://www.geeksforgeeks.org/boyer-moore-algorithm-for-pattern-searching/
 
 ---
 
