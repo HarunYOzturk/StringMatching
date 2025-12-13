@@ -1,3 +1,5 @@
+# Hasan Tarık Bakar 22050111007
+
 For this homework, I started from studying Boyer-Moore algorithm since
 it was not covered in the lecture as detailed as other string matching
 algorithms.
@@ -20,4 +22,23 @@ To be honest, preanalysis strategies were not exceed the examples,
 comparing string matching algorithms gave me a well understanding for
 different scenarios and use cases.
 
-Hasan Tarık Bakar 22050111007
+# Mehmet Emre YILDIZ 22050111065
+
+While doing this homework, I had a lot of trouble with compiling the source code and
+testing the compiled code.
+
+In the end, I gave up and teamed up with my bro Tarık, he got it to work on his computer.
+As you can infer, being a Windows normie put me at a disadvantage.
+
+I will be honest, having to use LLM's upset me. Even though we used it only as a tutor.
+I would have liked to do this on my own delving into books, pestering the instructors and such...
+But time was limited and we had other matters to attend to.
+
+I will give credit where credit is due, ChatGPT is one hell of an instructor for those who have a knack at giving decent prompts.
+We could make sense of what bad character and good suffix rules were thanks to it's tutelage.
+
+I find this homework to be an educational one, albeit somewhat hard.
+
+=============================================================================================================================
+
+P.S. : The report pdf is named "String Matching Raporu.pdf"
