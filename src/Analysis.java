@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 class Naive extends Solution {
     static {
@@ -190,7 +192,9 @@ class RabinKarp extends Solution {
  * TODO: Implement Boyer-Moore algorithm
  * This is a homework assignment for students
  */
+
 class BoyerMoore extends Solution {
+
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
@@ -201,8 +205,84 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        int m = pattern.length();
+        int n = text.length();
+        if (m == 0) {
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        if (n == 0 || m > n) {
+            return "";
+        }
+
+        Map<Character, Integer> badCharTable = new HashMap<>();
+
+        for (int i = 0; i < m; i++) {
+            badCharTable.put(pattern.charAt(i), i);
+        }
+        int[] goodSuffixTable = preprocessGoodSuffix(pattern);
+
+        List<Integer> match = new ArrayList<>();
+        int s = 0;
+
+        while (s <= (n - m)) {
+            int j = m - 1;
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                match.add(s);
+                s += goodSuffixTable[0];
+            } else {
+                char badChar = text.charAt(s + j);
+                int lastSeenPos = badCharTable.getOrDefault(badChar, -1);
+                int bcShift = j - lastSeenPos;
+                int gsShift = goodSuffixTable[j + 1];
+                s += Math.max(1, Math.max(bcShift, gsShift));
+            }
+        }
+
+        return indicesToString(match);
+    }
+
+
+    private int[] preprocessGoodSuffix(String pattern) {
+        int m = pattern.length();
+        int[] table = new int[m + 1];
+        int[] borderPos = new int[m + 1];
+        int i = m;
+        int j = m + 1;
+        borderPos[i] = j;
+        while (i > 0) {
+            while (j <= m && pattern.charAt(i - 1) != pattern.charAt(j - 1)) {
+                if (table[j] == 0) table[j] = j - i;
+                j = borderPos[j];
+            }
+            i--;
+            j--;
+            borderPos[i] = j;
+        }
+
+        j = borderPos[0];
+        for (i = 0; i <= m; i++) {
+            if (table[i] == 0) table[i] = j;
+            if (i == j) j = borderPos[j];
+        }
+
+        return table;
+    }
+
+
+    public String indicesToString(List<Integer> indices) {
+        if (indices.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < indices.size(); i++) {
+            sb.append(indices.get(i));
+            if (i < indices.size() - 1) sb.append(",");
+        }
+        return sb.toString();
     }
 }
 
@@ -222,9 +302,69 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        int n = text.length();
+        int m = pattern.length();
+
+        // Handle empty pattern
+        if (m == 0) {
+            List<Integer> indices = new ArrayList<>();
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // Handle empty text or pattern longer than text
+        if (n == 0 || m > n) {
+            return "";
+        }
+
+        Map<Character, Integer> rightMostIndex = new HashMap<>();
+
+        for (int i = 0; i < m; i++) {
+            rightMostIndex.put(pattern.charAt(i), i);
+        }
+
+        List<Integer> matches = new ArrayList<>();
+        int i = 0;
+        int center = m / 2;
+
+        while (i <= n - m) {
+            boolean match = true;
+
+            if (text.charAt(i + center) != pattern.charAt(center)) {
+                match = false;
+            } else if (text.charAt(i + m - 1) != pattern.charAt(m - 1)) {
+                match = false;
+            } else if (text.charAt(i) != pattern.charAt(0)) {
+                match = false;
+            } else {
+                for (int j = 1; j < m - 1; j++) {
+                    if (j == center) continue;
+                    if (text.charAt(i + j) != pattern.charAt(j)) {
+                        match = false;
+                        break;
+                    }
+                }
+            }
+
+            if (match) {
+                matches.add(i);
+            }
+
+
+            if (i + m < n) {
+                char nextChar = text.charAt(i + m);
+
+                int posInPattern = rightMostIndex.getOrDefault(nextChar, -1);
+                int shift = m - posInPattern;
+
+                i += shift;
+            } else {
+                break; // End of text
+            }
+        }
+
+        return indicesToString(matches);
     }
 }
-
-

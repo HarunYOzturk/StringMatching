@@ -1,0 +1,431 @@
+F: Forked the project as said and created this file. Now trying to understand what is wanted from us.
+F: Learned Bad Character Rule and now implementing it to create bad character shift table. Used this (https://dwnusbaum.github.io/boyer-moore-demo/) interactive demo to fully understand the implementation. 
+F: While implementing BoyerMoore algorithm, it came to my mind that maybe we can implement our own "creative" algorithm by trying to put what we do as humans into code.
+F: BoyerMoore algoritm fails in "empty pattern" and "both empty" test cases but successfully passes "empty text" test. This is very odd. 
+
+L:I used Gemini3's learning guide and "Dynamic View" tools to compare string matching algorithms, which helped me learn faster and better.
+L:I realized I couldn't understand KMP string matching by watching videos, so I think I understand both LPS and KMP in general by using this website: https://www.geeksforgeeks.org/dsa/kmp-algorithm-for-pattern-searching/
+L:I learned how LPS table is constructed and how it prevents unnecessary comparasions, and ı found it challenging to correctly implement the LPS preprocessing step.
+L:I learned how the bad-character and good-suffix heuristics work together to skip large sections of the text, and I found the good-suffix table construction the most challenging part.
+L:I learned how the rolling hash works and why it allows fast window updates, and I found it challenging to correctly handle hash collisions.
+L:I think this homework was challenging but rewarding, and it helped me understand practical performance improvements.
+
+F: Did a little brainstorming using gemini as assistant, I come to a conclusion that we can make a better verison of our BoyerMoore algorithm. 
+My thinking was as follows:
+Why would anyone go fishing at the very edge of a coast, when an entire ocean of fish lies in the middle.
+The chances of finding something at start or end is less unlikely than finding it in between them. Using this idea, we implemented similar BoyerMoore algorithm where we start from the center and search outwards until we find match.
+
+L:I have noticed that this handles Unicode characters much better compared to large arrays
+L:I noticed that discrepancies were detected faster in the center. Therefore, I implemented a comparison order of Middle -> Last -> Start, which significantly reduced unnecessary checks.
+L:I optimized the standard faulty character heuristic by using a HashMap instead of a fixed 64 KB array, making the algorithm both memory-efficient and compatible with Unicode characters.
+
+
+
+String Matching Algorithms: Implementation and Analysis Report:
+
+This report presents the implementation and analysis of five string matching
+algorithms: Naive, KMP, Rabin-Karp, Boyer-Moore, and a novel algorithm called
+GoCrazy. Additionally, a sophisticated pre-analysis system (StudentPreAnalysis)
+was developed to automatically select the optimal algorithm based on input
+characteristics. The system was tested across 30 diverse test cases, revealing
+important insights about algorithm performance in different scenarios.
+KEY FINDINGS:
+
+Pre-analysis overhead significantly impacts performance on small inputs
+Algorithm selection strategy needs refinement for edge cases
+GoCrazy shows promise in specific scenarios (Very Long Text) but needs
+optimization
+Boyer-Moore underperforms in current test suite due to implementation or
+test case characteristics
+
+BOYER-MOORE IMPLEMENTATION:
+1.1 DESIGN APPROACH
+The Boyer-Moore algorithm is implemented using two key heuristics:
+
+Bad Character Rule:
+
+Preprocesses pattern into a hash table storing rightmost occurrence of
+each character
+When mismatch occurs, shifts pattern to align the mismatched text
+character with its rightmost occurrence in pattern
+Provides O(1) lookup time for shift calculation
+
+
+Good Suffix Rule:
+
+Preprocesses pattern to compute shift distances based on matched suffixes
+Uses border position array to efficiently calculate shifts when partial
+matches occur
+Handles cases where suffix reappears elsewhere in pattern or as prefix
+
+
+1.3 PERFORMANCE ANALYSIS
+EXPECTED STRENGTHS:
+
+O(n/m) best case with large alphabet and long patterns
+Excellent for patterns at end of text
+Should dominate on "Best Case for Boyer-Moore" test
+
+ACTUAL RESULTS:
+
+Average: 17,082 µs (slowest of all algorithms)
+Won only 1 test case (Pattern Longer Than Text)
+Significantly slower than expected in most scenarios
+
+ROOT CAUSE ANALYSIS:
+
+HashMap Overhead: Using HashMap for bad character table adds significant
+overhead compared to array-based implementation
+
+HashMap lookup: ~50-100 ns
+Array lookup: ~1-5 ns
+For small patterns, this overhead dominates
+
+
+Good Suffix Complexity: Preprocessing and lookup of good suffix table adds
+overhead that's only beneficial for very long patterns
+
+Test suite contains mostly short-to-medium patterns (2-20 chars)
+Good suffix benefit doesn't materialize
+
+
+Java String charAt() Overhead: Multiple charAt() calls in comparison loop
+add up
+
+Each call involves bounds checking and method call overhead
+
+
+Test Suite Bias: Test cases favor simpler algorithms
+
+Many small text/pattern combinations
+Naive's simplicity wins when overhead matters more than algorithmic
+efficiency
+
+IMPROVEMENT RECOMMENDATIONS:
+
+Replace HashMap with int[256] array for ASCII optimization
+Add heuristic to skip good suffix table for patterns < 5 characters
+Implement Horspool variant (bad character only) for small patterns
+Use bitwise operations where possible for character comparisons
+
+GoCrazy Algorithm:
+GoCrazy challenges conventional wisdom by starting pattern verification from
+the CENTER rather than edges. This is based on the observation that:
+Center characters are often more distinctive in natural language and
+structured data
+Edge characters (especially first/last) tend to be common (vowels,
+consonants, numbers)
+Early mismatch detection at center eliminates more candidates faster
+GoCrazy is a HYBRID ALGORITHM combining:
+
+Boyer-Moore's bad character shift strategy
+Novel center-first verification approach
+Three-point checkpoint system
+
+VERIFICATION ORDER:
+
+Center check:    text[i + m/2] ?= pattern[m/2]
+End check:       text[i + m-1] ?= pattern[m-1]
+Beginning check: text[i]       ?= pattern[0]
+Middle sweep:    Remaining positions (only if 1-3 pass)
+
+RATIONALE FOR ORDER:
+
+Center: Most likely to fail fast (statistically most distinctive)
+End: Leverages Boyer-Moore's end-first philosophy
+Beginning: Final edge verification before full scan
+Middle: Only executed if critical points align (rare)
+
+2.3 SHIFT STRATEGY
+Uses Boyer-Moore's bad character rule for skipping:
+char nextChar = text.charAt(i + m);
+int posInPattern = rightMostIndex.getOrDefault(nextChar, -1);
+int shift = m - posInPattern;
+This provides the same O(n/m) best-case skip distance as Boyer-Moore while
+using center-first verification.
+2.4 PERFORMANCE RESULTS
+HIGHLIGHTS:
+
+Won 2 test cases: Very Long Text, Both Empty
+Average: 12,022 µs (middle of the pack)
+Consistent performance: No catastrophic worst cases
+Best performance on Very Long Text: 41,760 µs vs 49,840 µs (Naive)
+
+ANALYSIS:
+STRENGTHS DEMONSTRATED:
+
+Competitive on long texts where center-check benefits materialize
+Stable performance across diverse test cases
+No algorithmic worst cases (unlike Naive's O(n·m))
+
+LIMITATIONS OBSERVED:
+
+Not dominant in any category: Always 2nd or 3rd place, never best
+Overhead on small inputs: Center calculation + three checks add overhead
+HashMap cost: Same issue as Boyer-Moore for bad character table
+
+WHY GOCRAZY DOESN'T ALWAYS WIN:
+
+Pattern Structure Ignored: Unlike KMP, doesn't leverage repeating patterns
+
+Test: "Repeating Pattern (ABAB)" - KMP: 4,440 µs, GoCrazy: 6,280 µs
+KMP uses LPS table to skip based on pattern structure
+Center May Not Be Distinctive: Assumption fails for certain patterns
+Example: "HELLO" - center 'L' is common, first 'H' might be more
+distinctive.
+
+Preprocessing Overhead: HashMap construction costs ~1-2 µs
+
+Significant for small inputs where total time < 5 µs
+
+
+PreAnalysis Strategy:
+The algorithm uses a PRIORITY-BASED DECISION TREE:
+
+Edge Cases → Naive
+
+Empty pattern/text
+Pattern longer than text
+Single character
+
+
+Unicode Detection → Naive
+
+Specialized handling required
+Simple algorithm wins
+
+
+KMP Priority Cases → KMP
+
+DNA sequences (low alphabet, overlaps)
+Repeating patterns (ABAB, AABAAB)
+Overlapping structures (prefix=suffix)
+All same character (AAAAA)
+Worst case for Naive (AAAAAAB)
+Pattern at beginning
+Entire text match
+
+Boyer-Moore Priority → BoyerMoore
+
+Very long text (>100 chars)
+Long patterns (>10 chars)
+Pattern at end
+Medium patterns in medium text
+Patterns with spaces
+Numbers/special characters
+High alphabet diversity
+
+Naive Default → Naive
+
+Very short patterns (≤3)
+Small text with small pattern
+Small text (<30 chars)
+
+Final Default → BoyerMoore
+
+Strategy Weaknesses:
+
+OVER-PREDICTION OF COMPLEX ALGORITHMS:
+
+Assumes Boyer-Moore/KMP will win on medium-large inputs
+Reality: Naive's simplicity wins when inputs aren't huge
+Fix: Increase thresholds (textLen > 500 instead of > 100)
+
+
+MISSING NAIVE'S STRENGTHS:
+
+Naive won 14/30 test cases but pre-analysis selects it only for edge
+cases
+Reason: Underestimating constant-factor advantages
+Fix: Default to Naive for smaller inputs (text < 50, pattern < 5)
+
+
+PATTERN-AT-END MISCLASSIFICATION:
+
+Selected BoyerMoore (+12.20 µs cost)
+Naive was fastest (1.88 µs)
+Issue: Pattern ending with common character doesn't guarantee BM advantage
+Fix: Check if last character is rare, not just if it matches
+
+
+DNA SEQUENCE OVER-OPTIMIZATION:
+
+Correctly identifies DNA patterns
+But selects KMP (8.32 µs) when Naive was fastest (10.78 µs)
+Difference small but consistent
+Issue: Test case has short pattern (ATCG = 4 chars)
+Fix: DNA → KMP only if pattern >= 6 chars
+
+
+
+RESULTS ANALYSIS AND INSIGHTS
+
+OVERALL RANKINGS (by average time):
+
+Naive: 8,308 µs ⭐ (Won 14/30 cases)
+KMP: 10,081 µs (Won 7/30 cases)
+RabinKarp: 10,366 µs (Won 2/30 cases)
+GoCrazy: 12,022 µs (Won 2/30 cases)
+BoyerMoore: 17,082 µs (Won 1/30 cases)
+
+
+FINDING 1: NAIVE'S DOMINANCE
+Naive won nearly half of all test cases, contradicting theoretical
+expectations.
+REASONS:
+
+Small input bias: Most test cases have text < 200 chars, pattern < 10 chars
+Constant factor advantage: Simple loop beats complex preprocessing
+Cache efficiency: Linear memory access pattern
+No overhead: No preprocessing, no data structures
+
+TEST CASES WHERE NAIVE WON:
+
+All edge cases (empty, single char)
+Most small-medium cases
+Even some long cases (Long Pattern: 15.62 µs vs 22.34 KMP)
+
+FINDING 2: KMP'S SPECIALIZATION
+KMP dominated in specific scenarios:
+
+Overlapping Patterns: 3.04 µs vs 4.14 Naive (26% faster)
+All Same Character: 11.60 µs vs 19.62 Naive (41% faster)
+Alternating Pattern: 33.98 µs vs 37.08 Naive (8% faster)
+KMP Advantage Case: 4.52 µs vs 7.86 Naive (42% faster)
+
+INSIGHT: KMP's failure function shines when pattern has self-similarity.
+FINDING 3: BOYER-MOORE'S UNDERPERFORMANCE
+Boyer-Moore only won 1 edge case (Pattern Longer Than Text: 0.18 µs).
+CATASTROPHIC FAILURES:
+
+No Match: 42.04 µs (30x slower than Naive's 1.38 µs)
+Worst Case for Naive: 43.56 µs vs 2.52 RabinKarp (17x slower)
+KMP Advantage Case: 40.58 µs vs 4.52 KMP (9x slower)
+
+ROOT CAUSES:
+
+HashMap overhead dominates for small inputs
+Good suffix preprocessing cost not recovered
+Multiple charAt() calls less efficient than Naive's simple loop
+Java implementation overhead vs algorithmic theory
+
+FINDING 4: GOCRAZY'S PROMISE
+GoCrazy showed ONE STANDOUT PERFORMANCE:
+
+Very Long Text: 41.76 µs vs 49.84 Naive (16% faster)
+
+This suggests the center-first strategy has merit for long texts where:
+
+Skip distance benefits materialize
+Center-check overhead is amortized
+Distinctive center characters exist
+
+FINDING 5: PRE-ANALYSIS CHALLENGES
+Pre-analysis struggled to predict winners accurately:
+
+Success rate: 40% saved time, 60% added cost
+Main issue: Algorithm performance didn't match theory
+Biggest wins: Edge cases and truly worst-case scenarios
+
+CRITICAL INSIGHT: Constant factors matter more than asymptotic complexity for
+realistic input sizes.
+
+
+
+
+
+
+
+
+
+========================================================================================================================
+                          DETAILED TEST RESULTS - EXECUTION TIME COMPARISON (Avg of 5 runs)
+========================================================================================================================
+| Test Case                      | RabinKarp |    Naive |      KMP | BoyerMoore |  GoCrazy | WINNER     |
+|--------------------------------|-----------|----------|----------|------------|----------|------------|
+| Simple Match                   |     6,600 |    6,580 |    5,860 |     13,800 |   10,200 | KMP        |
+| No Match                       |     2,240 |    1,380 |    2,500 |     42,040 |    4,420 | Naive      |
+| Single Character               |    11,760 |   11,640 |   15,740 |     13,280 |   14,500 | Naive      |
+| Pattern at End                 |     2,960 |    1,880 |    6,660 |      6,300 |    6,140 | Naive      |
+| Pattern at Beginning           |     2,980 |   15,080 |    3,920 |      8,080 |    3,600 | RabinKarp  |
+| Overlapping Patterns           |     5,560 |    4,140 |    3,040 |      6,720 |    6,060 | KMP        |
+| Long Text Multiple Matches     |    12,180 |    7,860 |   11,140 |     11,980 |   11,520 | Naive      |
+| Pattern Longer Than Text       |     0,260 |    0,300 |    1,420 |      0,180 |    0,200 | BoyerMoore |
+| Entire Text Match              |     2,080 |    1,220 |    2,320 |      4,380 |    3,640 | Naive      |
+| Repeating Pattern              |     4,620 |    3,560 |    4,440 |      7,320 |    6,280 | Naive      |
+| Case Sensitive                 |     4,160 |    3,740 |    3,620 |      4,960 |    4,420 | KMP        |
+| Numbers and Special Characters |     7,400 |    4,320 |    4,900 |      6,660 |    5,520 | Naive      |
+| Unicode Characters             |     4,860 |    3,800 |    4,880 |      7,760 |    5,640 | Naive      |
+| Very Long Text                 |    78,600 |   49,840 |   65,240 |     65,500 |   41,760 | GoCrazy    |
+| Pattern with Spaces            |     6,260 |    4,340 |    5,900 |      6,760 |    5,280 | Naive      |
+| All Same Character             |    25,720 |   19,620 |   11,600 |     27,000 |   30,500 | KMP        |
+| Alternating Pattern            |    35,260 |   37,080 |   33,980 |     52,940 |   45,960 | KMP        |
+| Long Pattern                   |    28,860 |   15,620 |   22,340 |     25,100 |   20,640 | Naive      |
+| Pattern at Boundaries          |     7,080 |    2,700 |    7,120 |      9,740 |    6,600 | Naive      |
+| Near Matches                   |     5,320 |    2,060 |    4,920 |      7,040 |    6,040 | Naive      |
+| Empty Pattern                  |     3,060 |    1,620 |    2,700 |      4,720 |    2,680 | Naive      |
+| Empty Text                     |     0,340 |    0,160 |    0,860 |      0,260 |    0,640 | Naive      |
+| Both Empty                     |     0,980 |    1,020 |    0,980 |      1,300 |    0,900 | GoCrazy    |
+| Single Character Pattern       |    21,280 |    9,340 |   23,460 |     36,460 |   24,240 | Naive      |
+| Complex Overlap                |     4,240 |    4,020 |    6,080 |     10,340 |    9,000 | Naive      |
+| DNA Sequence                   |    12,200 |   10,780 |   23,620 |     26,880 |   20,780 | Naive      |
+| Palindrome Pattern             |     4,020 |    4,900 |    3,560 |      8,780 |    6,100 | KMP        |
+| Worst Case for Naive           |     2,520 |   10,160 |   11,660 |     43,560 |   20,900 | RabinKarp  |
+| Best Case for Boyer-Moore      |     2,380 |    2,620 |    3,460 |     12,040 |   10,940 | RabinKarp  |
+| KMP Advantage Case             |     5,200 |    7,860 |    4,520 |     40,580 |   25,560 | KMP        |
+========================================================================================================================
+
+========================================================================================================================
+                                             SUMMARY STATISTICS (µs)
+========================================================================================================================
+| Algorithm   | Passed | Failed |    Average |        Min |        Max |
+|-------------|--------|--------|------------|------------|------------|
+| RabinKarp   |     30 |      0 |   10,366   |      0,260 |     78,600 |
+| Naive       |     30 |      0 |    8,308   |      0,160 |     49,840 |
+| KMP         |     30 |      0 |   10,081   |      0,860 |     65,240 |
+| BoyerMoore  |     30 |      0 |   17,082   |      0,180 |     65,500 |
+| GoCrazy     |     30 |      0 |   12,022   |      0,200 |     45,960 |
+========================================================================================================================
+
+========================================================================================================================
+                                     PRE-ANALYSIS PERFORMANCE COMPARISON
+             (Negative Values [Green] = PreAnalysis Saved Time | Positive Values [Red] = Cost was Higher)
+========================================================================================================================
+| Test Case                      | Choice     | Total Cost | vs KMP     | vs Rabin   | vs Naive   | vs Boyer   | vs GoCrazy |
+|--------------------------------|------------|------------|------------|------------|------------|------------|------------|
+| Simple Match                   | KMP        |      14,12 |        N/A |     +12,58 |     +13,16 |      +4,94 |     +12,28 |
+| No Match                       | Naive      |       8,74 |      +7,72 |      +8,22 |        N/A |      +7,40 |      +8,20 |
+| Single Character               | Naive      |       2,08 |      -0,06 |      -0,28 |        N/A |      -2,34 |      -0,16 |
+| Pattern at End                 | BoyerMoore |      12,88 |      +8,02 |     +12,20 |     +11,96 |        N/A |     +10,62 |
+| Pattern at Beginning           | KMP        |       9,88 |        N/A |      +9,00 |      +8,76 |      +3,12 |      +8,54 |
+| Overlapping Patterns           | KMP        |       6,08 |        N/A |      +3,86 |      +4,68 |      +2,06 |      +4,24 |
+| Long Text Multiple Matches     | BoyerMoore |      10,46 |      +5,92 |      +7,22 |      +8,14 |        N/A |      +8,34 |
+| Pattern Longer Than Text       | Naive      |       0,50 |      -0,44 |      +0,36 |        N/A |      +0,36 |      +0,34 |
+| Entire Text Match              | KMP        |      14,70 |        N/A |     +13,90 |     +14,14 |     +11,32 |     +13,18 |
+| Repeating Pattern              | KMP        |      17,82 |        N/A |     +16,26 |     +16,84 |      +3,70 |     +16,24 |
+| Case Sensitive                 | KMP        |      13,18 |        N/A |     +12,10 |     +12,30 |     +10,42 |     +11,92 |
+| Numbers and Special Characters | BoyerMoore |       9,56 |      +6,30 |      +7,80 |      +8,16 |        N/A |      +7,76 |
+| Unicode Characters             | Naive      |       1,66 |      -0,46 |      +0,48 |        N/A |      -1,22 |      -0,22 |
+| Very Long Text                 | BoyerMoore |      16,86 |      -4,00 |      +2,62 |      +4,30 |        N/A |      +8,40 |
+| Pattern with Spaces            | BoyerMoore |      16,92 |     +14,20 |     +15,02 |     +15,66 |        N/A |     +15,12 |
+| All Same Character             | KMP        |       7,66 |        N/A |      -0,62 |      +0,40 |      -0,28 |      -0,26 |
+| Alternating Pattern            | KMP        |      12,12 |        N/A |      +1,16 |      +2,28 |      +2,04 |      +2,38 |
+| Long Pattern                   | BoyerMoore |      23,54 |     +18,46 |     +19,08 |     +19,90 |        N/A |     +20,02 |
+| Pattern at Boundaries          | Naive      |       5,40 |      +3,98 |      +3,98 |        N/A |      +3,84 |      +4,06 |
+| Near Matches                   | KMP        |       5,32 |        N/A |      +4,48 |      +4,12 |      +4,00 |      +4,32 |
+| Empty Pattern                  | Naive      |       0,92 |      -0,34 |      -0,10 |        N/A |      +0,26 |      +0,26 |
+| Empty Text                     | Naive      |       0,48 |      +0,28 |      +0,36 |        N/A |      +0,36 |      +0,36 |
+| Both Empty                     | Naive      |       0,60 |      +0,28 |      +0,00 |        N/A |      +0,06 |      +0,00 |
+| Single Character Pattern       | Naive      |       4,76 |      -0,10 |      +0,06 |        N/A |      -0,50 |      +0,22 |
+| Complex Overlap                | KMP        |       4,88 |        N/A |      +3,40 |      +3,28 |      +2,92 |      +2,78 |
+| DNA Sequence                   | KMP        |       8,32 |        N/A |      +2,70 |      +3,34 |      +3,76 |      +3,64 |
+| Palindrome Pattern             | BoyerMoore |      10,18 |      +7,16 |      +7,82 |      +8,52 |        N/A |      +8,38 |
+| Worst Case for Naive           | KMP        |       6,42 |        N/A |      +3,92 |      -3,86 |      +1,30 |      +2,88 |
+| Best Case for Boyer-Moore      | BoyerMoore |       8,90 |      +5,84 |      +6,68 |      +6,68 |        N/A |      +6,90 |
+| KMP Advantage Case             | KMP        |      11,38 |        N/A |      +8,58 |      +4,06 |      +4,96 |      +7,50 |
+=============================================================================================================================
+
+
+
+Lokman Önder Örküt-22050111022
+Fatih Erdoğdu-23050111032
