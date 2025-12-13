@@ -1,5 +1,8 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 class Naive extends Solution {
     static {
@@ -186,11 +189,37 @@ class RabinKarp extends Solution {
     }
 }
 
-/**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
- */
 class BoyerMoore extends Solution {
+    /*
+     * Boyer-Moore Algorithm: How it Works
+     * Unlike other algorithms, Boyer-Moore starts its comparison from the right
+     * side of the pattern and moves left. During this process, it uses
+     * "Bad Character" and "Good Suffix" tables to enable advanced, jump-based
+     * searching. (In some cases, it can jump 3-4 characters at a time, which
+     * means it runs very efficiently.)
+     *
+     * Our Implementation Map:
+     * - Edge Cases: If the pattern length 'm' is zero, all positions 0..n are
+     *   added to the results. If m > n, it returns an empty result immediately.
+     *
+     * - The Bad Character Rule: Shifts the pattern based on the character that
+     *   caused the mismatch.
+     *
+     * - The Good Suffix Rule: If we find a matching suffix before a mismatch,
+     *   this rule determines where to shift the pattern. It uses pre-calculated
+     *   suffix and prefix arrays.
+     *
+     * - Matching and Shifting: The process starts at index 'i' in the text and
+     *   checks the pattern from right to left. If there's no mismatch (j < 0),
+     *   the index is recorded and a shift is made. If there is a mismatch, the
+     *   shifts from the bad character and good suffix rules are calculated, and
+     *   the maximum of the two is applied.
+     *
+     * - Combining the Two Rules: The Biggest Jump Wins!
+     *   The real Boyer-Moore algorithm calculates how far it can shift according
+     *   to both rules and chooses the one that provides the longest jump.
+     *   shift = max(BadCharacterRule(), GoodSuffixRule())
+     */
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
@@ -201,8 +230,99 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+        char[] t = text.toCharArray();
+        char[] p = pattern.toCharArray();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        if (m > n) {
+            return "";
+        }
+        if (m == 1) {
+            char target = p[0];
+            for (int i = 0; i < n; i++) {
+                if (t[i] == target) {
+                    indices.add(i);
+                }
+            }
+            return indicesToString(indices);
+        }
+
+        int[] goodSuffix = buildGoodSuffixShift(p);
+        Map<Character, Integer> badChar = buildBadCharacterMap(p);
+
+        int i = 0;
+        while (i <= n - m) {
+            int j;
+            // Scan the pattern from right to left.
+            for (j = m - 1; j >= 0; j--) {
+                if (p[j] != t[i + j]) {
+                    break; // Mismatch found.
+                }
+            }
+
+            if (j < 0) {
+                // Full match found! Record it.
+                indices.add(i);
+                i += goodSuffix[0];
+            } else {
+                // Mismatch: Calculate the biggest possible jump.
+                int badCharShift = j - badChar.getOrDefault(t[i + j], -1);
+                int goodSuffixShift = goodSuffix[j + 1];
+                int shift = Math.max(badCharShift, goodSuffixShift);
+                i += (shift > 0) ? shift : 1;
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    private Map<Character, Integer> buildBadCharacterMap(char[] pattern) {
+        Map<Character, Integer> map = new HashMap<>();
+        for (int i = 0; i < pattern.length; i++) {
+            map.put(pattern[i], i);
+        }
+        return map;
+    }
+
+    private int[] buildGoodSuffixShift(char[] pattern) {
+        int m = pattern.length;
+        int[] shift = new int[m + 1];
+        int[] border = new int[m + 1];
+
+        int i = m;
+        int j = m + 1;
+        border[i] = j;
+
+        while (i > 0) {
+            while (j <= m && pattern[i - 1] != pattern[j - 1]) {
+                if (shift[j] == 0) {
+                    shift[j] = j - i;
+                }
+                j = border[j];
+            }
+            i--;
+            j--;
+            border[i] = j;
+        }
+
+        j = border[0];
+        for (i = 0; i <= m; i++) {
+            if (shift[i] == 0) {
+                shift[i] = j;
+            }
+            if (i == j) {
+                j = border[j];
+            }
+        }
+        return shift;
     }
 }
 
@@ -210,6 +330,29 @@ class BoyerMoore extends Solution {
  * TODO: Implement your own creative string matching algorithm
  * This is a homework assignment for students
  * Be creative! Try to make it efficient for specific cases
+ */
+/*
+ * GoCrazy Algorithm: A "Gated" Bidirectional Search
+ *
+ * This is a creative, heuristic-based algorithm. The core idea is to perform a
+ * very fast check on the endpoints of the pattern before committing to a full
+ * comparison of the inner part. It acts like a "gate": if the first and last
+ * characters don't match, the gate is closed, and we can immediately discard
+ * the current window and move on.
+ *
+ * How it Works:
+ * 1. The Two Gates: For each window in the text, it first compares the first
+ *    character of the pattern with the first character of the window, AND the
+ *    last character of the pattern with the last character of the window.
+ * 2. Inner Check: Only if both "gates" pass (i.e., both endpoints match) does
+ *    the algorithm proceed to check the rest of the characters in between.
+ * 3. Shift: In this implementation, the window is shifted by one position after
+ *    each check. This is simple but could be optimized further by using
+ *    information from mismatches to make larger jumps.
+ *
+ * This approach can be very efficient for quickly rejecting non-matching
+ * positions, especially with a large character set where mismatches on the
+ * endpoints are common.
  */
 class GoCrazy extends Solution {
     static {
@@ -222,9 +365,49 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        // This is a creative algorithm: Bidirectional Search (İki Yönlü Arama).
+        // It first checks the outermost characters (first and last) of the pattern.
+        // If they match, it then proceeds to check the inner part of the pattern.
+        // This can be very efficient for large alphabets as it quickly discards
+        // mismatches.
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        if (m > n) {
+            return "";
+        }
+
+        char firstChar = pattern.charAt(0);
+        char lastChar = pattern.charAt(m - 1);
+        int i = 0;
+
+        while (i <= n - m) {
+            // 1. Check last and first characters first (the two "gates")
+            if (text.charAt(i + m - 1) == lastChar && text.charAt(i) == firstChar) {
+
+                // 2. If gates pass, check the rest of the pattern from inside
+                boolean match = true;
+                for (int j = 1; j < m - 1; j++) {
+                    if (text.charAt(i + j) != pattern.charAt(j)) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    indices.add(i);
+                }
+            }
+            i++; // In this simple version, we shift by one. Can be optimized further.
+        }
+
+        return indicesToString(indices);
     }
 }
-
-
