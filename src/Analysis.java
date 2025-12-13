@@ -186,10 +186,16 @@ class RabinKarp extends Solution {
     }
 }
 
-/**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
- */
+/*
+ We visited the links provided by Harun Yahya Ozturk
+ On his github repository, And
+ https://www.geeksforgeeks.org/dsa/boyer-moore-algorithm-for-pattern-searching/
+ https://www.topcoder.com/thrive/articles/boyer-moore-algorithm-with-bad-character-heuristic
+
+ Then we asked ChatGPT to explain them to us.
+ Under ChatGPT's guidance we were able to implement
+ A functional Boyer-Moore Algorithm using both bad character and good suffix rules.
+*/
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
@@ -201,8 +207,112 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+
+        if (m > n) return "";
+
+        int[] badChar = buildBadChar(pattern);
+        int[] goodSuffix = buildGoodSuffix(pattern);
+
+        int i = 0; // index in text
+
+        while (i <= n - m) {
+            int j = m - 1;
+
+            // move from right to left comparing characters
+            while (j >= 0 && pattern.charAt(j) == text.charAt(i + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                // full match
+                indices.add(i);
+
+                // shift by good-suffix table for full match
+                i += goodSuffix[0];
+            } else {
+                int bcShift = j - badChar[text.charAt(i + j) & 0xFF];
+                int gsShift = goodSuffix[j];
+                i += Math.max(1, Math.max(bcShift, gsShift));
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    // BAD CHARACTER RULE
+    private int[] buildBadChar(String pattern) {
+        int[] table = new int[256];
+        for (int i = 0; i < 256; i++) table[i] = -1;
+
+        for (int i = 0; i < pattern.length(); i++) {
+            table[pattern.charAt(i) & 0xFF] = i;
+        }
+
+        return table;
+    }
+
+    // GOOD SUFFIX RULE
+    private int[] buildGoodSuffix(String pattern) {
+        int m = pattern.length();
+        int[] goodSuffix = new int[m];
+        int[] suffix = buildSuffix(pattern);
+
+        // initialize all shifts to m (default)
+        for (int i = 0; i < m; i++) {
+            goodSuffix[i] = m;
+        }
+
+        // case 1: prefix matches
+        int j = 0;
+        for (int i = m - 1; i >= 0; i--) {
+            if (suffix[i] == i + 1) {
+                while (j < m - 1 - i) {
+                    if (goodSuffix[j] == m) {
+                        goodSuffix[j] = m - 1 - i;
+                    }
+                    j++;
+                }
+            }
+        }
+
+        // case 2: proper suffix matches
+        for (int i = 0; i < m - 1; i++) {
+            goodSuffix[m - 1 - suffix[i]] = m - 1 - i;
+        }
+
+        return goodSuffix;
+    }
+
+    private int[] buildSuffix(String pattern) {
+        int m = pattern.length();
+        int[] suffix = new int[m];
+        suffix[m - 1] = m;
+
+        int g = m - 1;
+        int f = 0;
+
+        for (int i = m - 2; i >= 0; i--) {
+            if (i > g && suffix[i + m - 1 - f] < i - g) {
+                suffix[i] = suffix[i + m - 1 - f];
+            } else {
+                if (i < g) g = i;
+                f = i;
+                while (g >= 0 && pattern.charAt(g) == pattern.charAt(g + m - 1 - f)) {
+                    g--;
+                }
+                suffix[i] = f - g;
+            }
+        }
+
+        return suffix;
     }
 }
 
