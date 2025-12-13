@@ -1,3 +1,5 @@
+//Pakize Sumeyye Soylemez
+//Student ID:255101402
 /**
  * PreAnalysis interface for students to implement their algorithm selection logic
  * 
@@ -38,26 +40,56 @@ public abstract class PreAnalysis {
  * This is where students write their pre-analysis logic
  */
 class StudentPreAnalysis extends PreAnalysis {
-    
+
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) return "Naive";
+        if (m <= 2) return "Naive";
+        if (m > n) return "Naive";
+
+        // KMP: tekrar eden karakter / küçük periyotlu tekrar desenlerinde iyi
+        if (looksHighlyRepetitive(pattern) || hasSmallPeriod(pattern)) {
+            return "KMP";
+        }
+
+        // Senin testlerinde GoCrazy çoğu senaryoda en hızlıydı
+        return "GoCrazy";
     }
-    
+
+    private boolean looksHighlyRepetitive(String p) {
+        int limit = Math.min(p.length(), 8);
+        int[] freq = new int[256];
+        for (int i = 0; i < limit; i++) {
+            char c = p.charAt(i);
+            if (c < 256) freq[c]++;
+        }
+        int max = 0;
+        for (int i = 0; i < 256; i++) max = Math.max(max, freq[i]);
+        return max >= limit - 1;
+    }
+
+    private boolean hasSmallPeriod(String p) {
+        int m = p.length();
+        for (int per = 1; per <= 3; per++) {
+            if (per >= m) break;
+            boolean ok = true;
+            for (int i = per; i < m; i++) {
+                if (p.charAt(i) != p.charAt(i - per)) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) return true;
+        }
+        return false;
+    }
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Heuristic: very short/m>n -> Naive; repetitive patterns -> KMP; otherwise -> GoCrazy.";
     }
 }
 
