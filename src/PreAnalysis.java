@@ -7,6 +7,9 @@
  * The system will automatically use this analysis if the chooseAlgorithm method
  * returns a non-null value.
  */
+
+// Name : Ömer Faruk Başaran
+// ID : 21050111041
 public abstract class PreAnalysis {
     
     /**
@@ -41,25 +44,80 @@ class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int textLen = text.length();
+        int patternLen = pattern.length();
+
+        // Empty pattern - use naive
+        if (patternLen == 0) {
+            return "Naive";
+        }
+
+        // Pattern longer than text - no match possible
+        if (patternLen > textLen) {
+            return "Naive";
+        }
+
+        // Very short patterns (1-2 chars) - naive is fastest
+        if (patternLen <= 2) {
+            return "Naive";
+        }
+
+        // Check pattern diversity (how many unique characters)
+        int uniqueChars = countUniqueChars(pattern);
+        double diversity = (double) uniqueChars / patternLen;
+
+        // Low diversity (many repeating chars) - KMP handles this well
+        if (diversity < 0.5) {
+            return "KMP";
+        }
+
+        // Long patterns with high diversity - Boyer-Moore excels
+        if (patternLen >= 7 && diversity > 0.7) {
+            return "BoyerMoore";
+        }
+
+        // Medium patterns in large text - RabinKarp is good
+        if (patternLen >= 4 && patternLen <= 8 && textLen > 500) {
+            return "RabinKarp";
+        }
+
+        // Short to medium patterns - naive is simple and fast
+        if (patternLen <= 5) {
+            return "Naive";
+        }
+
+        // Default to Boyer-Moore
+        return "BoyerMoore";
     }
-    
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Diversity-based selection: Analyzes unique character ratio in pattern. " +
+                "Naive for short patterns, KMP for low diversity (repeating chars), " +
+                "Boyer-Moore for long diverse patterns, RabinKarp for medium patterns in large text.";
+    }
+
+    /**
+     * Count the number of unique characters in the pattern.
+     * Used to determine pattern diversity.
+     */
+    private int countUniqueChars(String pattern) {
+        boolean[] seen = new boolean[256]; // ASCII characters
+        int count = 0;
+
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (!seen[c]) {
+                seen[c] = true;
+                count++;
+            }
+        }
+
+        return count;
     }
 }
+
+
 
 
 /**
