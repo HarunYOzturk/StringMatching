@@ -41,23 +41,50 @@ class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        // Strategy 1: Repeating Prefixes -> KMP
+        // Check this FIRST. Even for short patterns, if they are repetitive (e.g. "AAAA")
+        // and the text is long, Naive degrades to O(n*m). KMP stays O(n).
+        if (hasRepeatingPrefix(pattern)) {
+            return "KMP";
+        }
+
+        // Strategy 2: Short to Medium Patterns -> Naive
+        // Naive is surprisingly fast in Java due to JIT optimizations and low overhead.
+        // For patterns up to 20 characters (that aren't repetitive), the overhead of 
+        // building tables (HashMap/Arrays) in BM/KMP/GoCrazy often outweighs the search speedup.
+        if (m <= 20) {
+            return "Naive";
+        }
+
+        // Strategy 3: Long Patterns -> GoCrazy (Horspool)
+        // For long patterns, the skip mechanism of Horspool becomes very effective.
+        // It's generally lighter than standard Boyer-Moore.
+        if (m > 20) {
+            return "GoCrazy";
+        }
+
+        // Default Fallback
+        return "Naive";
+    }
+
+    private boolean hasRepeatingPrefix(String pattern) {
+        if (pattern.length() < 2) return false;
+        // Check if the first few characters are the same
+        char first = pattern.charAt(0);
+        int limit = Math.min(pattern.length(), 5);
+        int count = 0;
+        for (int i = 0; i < limit; i++) {
+            if (pattern.charAt(i) == first) count++;
+        }
+        return count >= 3;
     }
     
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Optimized Strategy: Naive for patterns <= 20 chars (low overhead), KMP for repeating prefixes, GoCrazy (Horspool) for long patterns.";
     }
 }
 
