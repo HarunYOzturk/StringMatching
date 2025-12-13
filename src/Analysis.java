@@ -1,6 +1,8 @@
+// Mustafa Kesim - Tevfik Han Parlak
+
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Arrays;
 class Naive extends Solution {
     static {
         SUBCLASSES.add(Naive.class);
@@ -191,20 +193,89 @@ class RabinKarp extends Solution {
  * This is a homework assignment for students
  */
 class BoyerMoore extends Solution {
+
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
     }
 
-    public BoyerMoore() {
-    }
-
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+
+        List<Integer> indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Handle empty pattern: match is considered to occur at every index.
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If pattern is longer than the text, no match is possible.
+        if (m > n) {
+            return indicesToString(indices);
+        }
+
+        // ---------------------- BUILD BAD CHARACTER TABLE ----------------------
+        // We size the table dynamically based on the characters inside the pattern.
+        int maxChar = 0;
+        for (int i = 0; i < m; i++) {
+            maxChar = Math.max(maxChar, pattern.charAt(i));
+        }
+
+        int[] badChar = new int[maxChar + 1];
+        Arrays.fill(badChar, -1);
+
+        // Record the last occurrence of each character in the pattern.
+        for (int i = 0; i < m; i++) {
+            badChar[pattern.charAt(i)] = i;
+        }
+
+        // ---------------------- MAIN SEARCH LOOP ----------------------
+        int s = 0;  // current shift of the pattern over the text
+
+        while (s <= n - m) {
+
+            int j = m - 1;
+
+            // Compare pattern and text characters from right to left.
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            // Full match found when j < 0.
+            if (j < 0) {
+                indices.add(s);
+
+                // Shift according to the character following the current window.
+                if (s + m < n) {
+                    char nextChar = text.charAt(s + m);
+                    int lastOcc = (nextChar < badChar.length) ? badChar[nextChar] : -1;
+                    int shift = m - lastOcc;
+                    if (shift <= 0) shift = 1;
+                    s += shift;
+                } else {
+                    s += 1;
+                }
+
+            } else {
+                // Mismatch occurred → apply the bad character rule.
+                char bad = text.charAt(s + j);
+                int lastOcc = (bad < badChar.length) ? badChar[bad] : -1;
+                int shift = j - lastOcc;
+                if (shift < 1) shift = 1;
+                s += shift;
+            }
+        }
+
+        return indicesToString(indices);
     }
 }
+
 
 /**
  * TODO: Implement your own creative string matching algorithm
