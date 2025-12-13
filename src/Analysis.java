@@ -1,3 +1,6 @@
+//Pakize Sumeyye Soylemez
+//Student ID:255101402
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -200,10 +203,54 @@ class BoyerMoore extends Solution {
     }
 
     @Override
-    public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+public String Solve(String text, String pattern) {
+    List<Integer> ans = new ArrayList<>();
+    int n = text.length();
+    int m = pattern.length();
+
+    // boş pattern
+    if (m == 0) {
+        for (int i = 0; i <= n; i++) ans.add(i);
+        return indicesToString(ans);
     }
+
+    if (m > n) return "";
+
+    // bad character
+    int[] last = new int[65536];
+    for (int i = 0; i < last.length; i++) last[i] = -1;
+    for (int i = 0; i < m; i++) {
+        char c = pattern.charAt(i);
+        last[pattern.charAt(i)] = i;;
+    }
+
+    int shift = 0;
+    while (shift <= n - m) {
+        int j = m - 1;
+
+        while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
+            j--;
+        }
+
+        if (j < 0) {
+            ans.add(shift);
+            if (shift + m < n) {
+                char next = text.charAt(shift + m);
+                int lo = last[text.charAt(shift + m)];
+                shift += (m - lo);
+            } else {
+                shift += 1;
+            }
+        } else {
+            char bad = text.charAt(shift + j);
+            int lo = last[text.charAt(shift + j)];
+            shift += Math.max(1, j - lo);
+        }
+    }
+
+    return indicesToString(ans);
+}
+
 }
 
 /**
@@ -221,10 +268,42 @@ class GoCrazy extends Solution {
     }
 
     @Override
-    public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+public String Solve(String text, String pattern) {
+    List<Integer> indices = new ArrayList<>();
+    int n = text.length();
+    int m = pattern.length();
+
+    // empty pattern
+    if (m == 0) {
+        for (int i = 0; i <= n; i++) indices.add(i);
+        return indicesToString(indices);
     }
+
+    if (m > n) return "";
+
+    char first = pattern.charAt(0);
+    char last = pattern.charAt(m - 1);
+
+    for (int i = 0; i <= n - m; i++) {
+        // küçük filtre
+        if (text.charAt(i) != first) continue;
+
+        // ekstra filtre
+        if (text.charAt(i + m - 1) != last) continue;
+
+        // tam kontrol
+        int j = 1;
+        while (j < m - 1 && text.charAt(i + j) == pattern.charAt(j)) {
+            j++;
+        }
+        if (m == 1 || j == m - 1) {
+            // m==1 için yukarıdaki while'a girmiyoruz, direkt match kabul
+            indices.add(i);
+        }
+    }
+
+    return indicesToString(indices);
+}
 }
 
 
