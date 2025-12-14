@@ -187,34 +187,88 @@ class RabinKarp extends Solution {
 }
 
 /**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
+ * Optimized Boyer-Moore using HashMap for Bad Character Heuristic.
+ * This avoids the overhead of initializing a size-65536 array for every search,
+ * providing both Unicode support and high performance.
  */
 class BoyerMoore extends Solution {
+    
     static {
         SUBCLASSES.add(BoyerMoore.class);
-        System.out.println("BoyerMoore registered");
+        System.out.println("BoyerMoore registered.");
     }
 
     public BoyerMoore() {
     }
 
+    // HashMap based preprocessing
+    private void badCharHeuristic(String str, int size, java.util.Map<Character, Integer> badchar) {
+        for (int i = 0; i < size; i++)
+            badchar.put(str.charAt(i), i);
+    }
+
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        StringBuilder result = new StringBuilder();
+        int m = pattern.length();
+        int n = text.length();
+
+        // Empty Pattern Logic
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                if (i > 0) result.append(",");
+                result.append(i);
+            }
+            return result.toString();
+        }
+
+        if (m > n) return "";
+
+        // Use HashMap instead of int[65536]
+        java.util.Map<Character, Integer> badchar = new java.util.HashMap<>();
+        badCharHeuristic(pattern, m, badchar);
+
+        int s = 0; 
+        while (s <= (n - m)) {
+            int j = m - 1;
+
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j))
+                j--;
+
+            if (j < 0) {
+                if (result.length() > 0) result.append(",");
+                result.append(s);
+
+                // Calculate shift: look at text[s+m]
+                // If text[s+m] exists in map, align it. Else shift m+1.
+                // getOrDefault(char, -1) simulates the array initialized to -1.
+                int nextCharIndex = (s + m < n) ? badchar.getOrDefault(text.charAt(s + m), -1) : -1;
+                s += (s + m < n) ? m - nextCharIndex : 1;
+
+            } else {
+                // Mismatch shift
+                // getOrDefault returns -1 if char not in pattern
+                int charIndex = badchar.getOrDefault(text.charAt(s + j), -1);
+                s += Math.max(1, j - charIndex);
+            }
+        }
+
+        return result.toString();
     }
 }
 
 /**
- * TODO: Implement your own creative string matching algorithm
- * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
+ * Implementation of Boyer-Moore-Horspool.
+ * OPTIMIZATION: Hybrid Table Strategy
+ * - If pattern is ASCII only: Uses int[256] array (Ultra fast, low overhead).
+ * - If pattern has Unicode: Uses HashMap (Safe, prevents crashes).
+ * This eliminates the overhead of HashMap for most of test cases.
  */
 class GoCrazy extends Solution {
+    
     static {
         SUBCLASSES.add(GoCrazy.class);
-        System.out.println("GoCrazy registered");
+        System.out.println("GoCrazy registered.");
     }
 
     public GoCrazy() {
@@ -222,9 +276,79 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        StringBuilder result = new StringBuilder();
+        int m = pattern.length();
+        int n = text.length();
+
+        // Edge Cases
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                if (i > 0) result.append(",");
+                result.append(i);
+            }
+            return result.toString();
+        }
+        if (m > n) return "";
+
+        // CHECK IF PATTERN IS ASCII ONLY
+        boolean isAscii = true;
+        for (int i = 0; i < m; i++) {
+            if (pattern.charAt(i) > 255) {
+                isAscii = false;
+                break;
+            }
+        }
+
+        // PATH 1: ASCII ONLY (FAST PATH)
+        // Uses int[] array. Extremely low overhead.
+        if (isAscii) {
+            int[] shiftTable = new int[256];
+            // Arrays.fill is native and fast
+            java.util.Arrays.fill(shiftTable, m);
+
+            for (int i = 0; i < m - 1; i++) {
+                shiftTable[pattern.charAt(i)] = m - 1 - i;
+            }
+
+            int i = m - 1;
+            while (i < n) {
+                int k = 0;
+                while (k < m && pattern.charAt(m - 1 - k) == text.charAt(i - k)) {
+                    k++;
+                }
+                if (k == m) {
+                    if (result.length() > 0) result.append(",");
+                    result.append(i - m + 1);
+                }
+                
+                // Fast array access
+                char c = text.charAt(i);
+                // If text char is Unicode but pattern is ASCII, it's a mismatch -> shift m
+                i += (c <= 255) ? shiftTable[c] : m;
+            }
+        } 
+        // PATH 2: UNICODE (SAFE PATH)
+        // Uses HashMap. Handles emojis, special chars etc.
+        else {
+            java.util.Map<Character, Integer> shiftTable = new java.util.HashMap<>();
+            for (int i = 0; i < m - 1; i++) {
+                shiftTable.put(pattern.charAt(i), m - 1 - i);
+            }
+
+            int i = m - 1;
+            while (i < n) {
+                int k = 0;
+                while (k < m && pattern.charAt(m - 1 - k) == text.charAt(i - k)) {
+                    k++;
+                }
+                if (k == m) {
+                    if (result.length() > 0) result.append(",");
+                    result.append(i - m + 1);
+                }
+                i += shiftTable.getOrDefault(text.charAt(i), m);
+            }
+        }
+
+        return result.toString();
     }
 }
-
-
