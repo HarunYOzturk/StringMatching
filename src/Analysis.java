@@ -187,8 +187,16 @@ class RabinKarp extends Solution {
 }
 
 /**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
+ * I used geeksforgeeks.org to understand the logic of the Boyer Moore algorithm and
+ * to implement it. I understand the logic before I take a look at the code. However,
+ * when I tried to code the logic, I realised I learnt nothing. So, you can consider my code
+ * is partially copied from there since I nearly did nothing different.
+ * 
+ * Except one thing. We always assumed all string matchings are done with ASCII characters.
+ * However there were one test case that a character that is not on the ASCII table. So, I added
+ * a loop to find the maximum character value in text and pattern to create the proper table.
+ * 
+ * Research Website: https://www.geeksforgeeks.org/dsa/boyer-moore-algorithm-for-pattern-searching/
  */
 class BoyerMoore extends Solution {
     static {
@@ -199,10 +207,96 @@ class BoyerMoore extends Solution {
     public BoyerMoore() {
     }
 
+    // The preprocessing function for Boyer Moore's
+    // bad character heuristic
+    private void badCharHeuristic(String str, int size, int badchar[], int tableSize) {
+        // Initialize all occurrences as -1
+        for (int i = 0; i < tableSize; i++)
+            badchar[i] = -1;
+
+        /**
+         * Fill the actual value of last occurrence of a character (indices of table
+         * are char values and values are index of occurrence)
+         */
+        for (int i = 0; i < size; i++)
+            badchar[(int) str.charAt(i)] = i;
+    }
+
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int m = pattern.length();
+        int n = text.length();
+
+        // Handle empty pattern
+        if (m == 0) {
+            for (int i = 0; i <= n; i++)
+                indices.add(i);
+            
+            return indicesToString(indices);
+        }
+
+        // Handle pattern longer than text
+        if (m > n)
+            return "";
+
+        // Find the maximum character value in text and pattern to create the proper table
+        int maxChar = 0;
+        for (int i = 0; i < n; i++) {
+            int charVal = (int) text.charAt(i);
+            if (charVal > maxChar)
+                maxChar = charVal;
+        }
+        for (int i = 0; i < m; i++) {
+            int charVal = (int) pattern.charAt(i);
+            if (charVal > maxChar)
+                maxChar = charVal;
+        }
+        
+        // Table size is maxChar + 1 to include the max character itself
+        int tableSize = maxChar + 1;
+        int badchar[] = new int[tableSize];
+
+        // Fill the bad character array
+        badCharHeuristic(pattern, m, badchar, tableSize);
+
+        // shift index
+        int s = 0; 
+
+        // n-m+1 potential alignments
+        while (s <= (n - m)) {
+            int j = m - 1;
+
+            /**
+             * Reduce index j of pattern while characters of pattern and text are
+             * matching at this shift s
+             */
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j))
+                j--;
+
+            /**
+             * If the pattern is present at current shift, then index j will 
+             * become -1 afterthe above loop
+             */
+            if (j < 0) {
+                indices.add(s);
+
+                /**
+                 * Shift the pattern so that the next character in text aligns with the
+                 *  last occurrence of it in pattern. The condition s+m < n is necessary
+                 * for the case when pattern occurs at the end of text
+                 */
+                s += (s + m < n) ? m - badchar[text.charAt(s + m)]
+                                 : 1;
+            } else
+                   /**
+                    * Shift the pattern so that the bad character in text aligns with the last
+                    * occurrence of it in pattern.
+                    */
+                s += Math.max(1, j - badchar[text.charAt(s + j)]);
+        }
+
+        return indicesToString(indices);
     }
 }
 
