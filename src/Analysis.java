@@ -1,6 +1,8 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
+//Gökmen Balcı 22050111046
 class Naive extends Solution {
     static {
         SUBCLASSES.add(Naive.class);
@@ -201,10 +203,79 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        char[] patternChars = pattern.toCharArray();
+        char[] textChars = text.toCharArray();
+        int n = text.length();
+        int m = pattern.length();
+
+        // Used map for Bad Character Heurustic because this allows us to handle Unicode (special chars) without a huge array.
+        Map<Character, Integer> badCharMap = new HashMap<>();
+        badCharH(patternChars, m, badCharMap);
+
+        // Case 1: Empty pattern matches everywhere
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // Case 2: Pattern is longer than text = Impossible to match
+        if (m > n) {
+            return "None";
+        }
+
+        int s = 0; // 's' is the shift (current position of the pattern in text)
+
+        // Loop until the pattern goes past the end of the text
+        while (s <= (n - m)) {
+            int j = m - 1;
+
+            // Compare characters starting from the right side (End of pattern)
+            while (j >= 0 && patternChars[j] == textChars[s + j])
+                j--;
+
+            // If j < 0, it means we scanned the whole pattern and everything matched
+            if (j < 0) {
+                indices.add(s); // Match found at shift 's'
+
+                // Shift pattern to find the next match:
+                // Check the character in text AFTER the pattern to decide how far to jump.
+                // If that char is not in our map, we jump the full length (m).
+                int badCharShift = badCharMap.getOrDefault(
+                        (s + m < n) ? textChars[s + m] : null, -1
+                );
+
+                s += (s + m < n) ? m - badCharShift : 1;
+
+            } else {
+                // if we found mismatch
+                // We align the bad character in text with its last occurrence in the pattern.
+                // max(1, ...) ensures we always move forward, never backward.
+                int badCharShift = badCharMap.getOrDefault(textChars[s + j], -1);
+                s += max(1, j - badCharShift);
+            }
+        }
+        return indicesToString(indices);
+    }
+
+    // Simple helper to get the larger of two numbers
+    private int max(int a, int b) {
+        return (a > b) ? a : b;
+    }
+
+    // Pre-processing function: Fills the Bad Character Map
+    // It records the LAST index where each character appears in the pattern.
+    private void badCharH(char[] str, int size, Map<Character, Integer> badCharMap) {
+        for (int i = 0; i < size; i++) {
+            badCharMap.put(str[i], i);
+        }
     }
 }
+
+
+
 
 /**
  * TODO: Implement your own creative string matching algorithm
