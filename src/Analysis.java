@@ -1,5 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 class Naive extends Solution {
     static {
@@ -187,44 +186,181 @@ class RabinKarp extends Solution {
 }
 
 /**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
+ * Boyer-Moore string matching algorithm implementation
+ * Uses bad character rule and good suffix rule for efficient pattern matching
  */
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
-        System.out.println("BoyerMoore registered");
-    }
-
-    public BoyerMoore() {
+        System.out.println("BoyerMoore registered (Cache-Optimized)");
     }
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        int n = text.length();
+        int m = pattern.length();
+        
+        if (m == 0) {
+            List<Integer> indices = new ArrayList<>(n + 1);
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        if (m > n) return "";
+        
+        List<Integer> indices = new ArrayList<>();
+        
+        int[] badChar = preprocessBadChar(pattern);
+        int[] goodSuffix = preprocessGoodSuffix(pattern);
+        
+        int s = 0;
+        while (s <= n - m) {
+            int j = m - 1;
+            
+            // Match from right to left
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+            
+            if (j < 0) {
+                // Full match
+                indices.add(s);
+                s += goodSuffix[0];
+            } else {
+                // Mismatch - compute shifts
+                char mismatchChar = text.charAt(s + j);
+                int badCharPos = badChar[mismatchChar & 0xFF];
+                int badCharShift = (badCharPos < 0) ? j + 1 : Math.max(1, j - badCharPos);
+                int goodSuffixShift = goodSuffix[j + 1];
+                
+                s += Math.max(badCharShift, goodSuffixShift);
+            }
+        }
+        
+        return indicesToString(indices);
+    }
+
+    private int[] preprocessBadChar(String pattern) {
+        int[] badChar = new int[256];
+        Arrays.fill(badChar, -1);
+        
+        for (int i = 0; i < pattern.length(); i++) {
+            badChar[pattern.charAt(i) & 0xFF] = i;
+        }
+        
+        return badChar;
+    }
+
+    private int[] preprocessGoodSuffix(String pattern) {
+        int m = pattern.length();
+        int[] goodSuffix = new int[m + 1];
+        int[] border = new int[m + 1];
+        
+        Arrays.fill(goodSuffix, m);
+        
+        int i = m, j = m + 1;
+        border[i] = j;
+        
+        while (i > 0) {
+            while (j <= m && pattern.charAt(i - 1) != pattern.charAt(j - 1)) {
+                if (goodSuffix[j] == m) {
+                    goodSuffix[j] = j - i;
+                }
+                j = border[j];
+            }
+            i--;
+            j--;
+            border[i] = j;
+        }
+        
+        j = border[0];
+        for (i = 0; i <= m; i++) {
+            if (goodSuffix[i] == m) {
+                goodSuffix[i] = j;
+            }
+            if (i == j) {
+                j = border[j];
+            }
+        }
+        
+        // Ensure minimum shift of 1
+        for (i = 0; i <= m; i++) {
+            if (goodSuffix[i] == 0) goodSuffix[i] = 1;
+        }
+        
+        return goodSuffix;
     }
 }
 
-/**
- * TODO: Implement your own creative string matching algorithm
- * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
- */
 class GoCrazy extends Solution {
     static {
         SUBCLASSES.add(GoCrazy.class);
-        System.out.println("GoCrazy registered");
-    }
-
-    public GoCrazy() {
+        System.out.println("GoCrazy registered (Adaptive Horspool++)");
     }
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        int n = text.length();
+        int m = pattern.length();
+        
+        if (m == 0) {
+            List<Integer> indices = new ArrayList<>(n + 1);
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        if (m > n) return "";
+        
+        List<Integer> indices = new ArrayList<>();
+        
+        // Adaptive strategy based on pattern length
+        if (m == 1) {
+            // Special case: single character (ultra-fast)
+            char c = pattern.charAt(0);
+            for (int i = 0; i < n; i++) {
+                if (text.charAt(i) == c) indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        
+        // Build skip table (Horspool)
+        int[] skip = new int[256];
+        Arrays.fill(skip, m);
+        
+        for (int i = 0; i < m - 1; i++) {
+            skip[pattern.charAt(i) & 0xFF] = m - 1 - i;
+        }
+        
+        // Cache last character for quick rejection
+        char lastPatternChar = pattern.charAt(m - 1);
+        
+        // Main search loop
+        int i = 0;
+        while (i <= n - m) {
+            // Quick last-character check
+            char lastTextChar = text.charAt(i + m - 1);
+            
+            if (lastTextChar != lastPatternChar) {
+                // Fast skip - no match possible
+                i += skip[lastTextChar & 0xFF];
+                continue;
+            }
+            
+            // Last character matches - check rest from right to left
+            int j = m - 2;
+            while (j >= 0 && text.charAt(i + j) == pattern.charAt(j)) {
+                j--;
+            }
+            
+            if (j < 0) {
+                // Full match found
+                indices.add(i);
+                // Skip intelligently: use pattern's self-overlap
+                i += (m > 1) ? skip[pattern.charAt(m - 2) & 0xFF] : 1;
+            } else {
+                // Mismatch - use Horspool skip
+                i += skip[lastTextChar & 0xFF];
+            }
+        }
+        
+        return indicesToString(indices);
     }
 }
-
-
