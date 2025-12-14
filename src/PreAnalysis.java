@@ -40,20 +40,45 @@ public abstract class PreAnalysis {
 class StudentPreAnalysis extends PreAnalysis {
     
     @Override
-    public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+public String chooseAlgorithm(String text, String pattern) {
+    int n = text.length();
+    int m = pattern.length();
+
+    if (m == 0) {
+        return "Naive"; 
     }
+
+    if (m > 15 || (n > 300 && m < 10)) {
+        return "BoyerMoore";
+    }
+
+    if (m > n) {
+        return "RabinKarp";
+    }
+
+    if (hasRepeatingPrefix(pattern)) 
+            return "KMP"; 
+
+    if (n < 300 || m < 5) {
+        return "Naive";
+    }
+
+    
+    return "BoyerMoore";
+}
+
+private boolean hasRepeatingPrefix(String pattern) {
+        if (pattern.length() < 2) return false;
+
+        // Check if first character repeats
+        char first = pattern.charAt(0);
+        int count = 0;
+        for (int i = 0; i < Math.min(pattern.length(), 5); i++) {
+            if (pattern.charAt(i) == first) count++;
+        }
+        return count >= 3;
+    }
+
     
     @Override
     public String getStrategyDescription() {
