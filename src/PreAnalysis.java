@@ -7,6 +7,7 @@
  * The system will automatically use this analysis if the chooseAlgorithm method
  * returns a non-null value.
  */
+//Gökmen Balcı 22050111046
 public abstract class PreAnalysis {
     
     /**
@@ -41,18 +42,58 @@ class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int t=text.length();
+
+        int p=pattern.length();
+
+        //Case Naive for small pattern and small text
+        if((1<p&&p<=8)&&t<120){
+
+            return "Naive";
+        //Case 2 for pattern or text length is zero because RobinKarp better at this condition
+        }else if(p==0||t==0){
+
+            return "RabinKarp";
+            //Case 3 for pattern length is 1 or repeating patters and checking for text length
+        }else if(p==1||isRepeating(pattern)&&t<20){
+
+            return "KMP";
+        //Default case for long pattern or long texts
+        }else{
+
+            return "BoyerMoore";
+
+        }
+
+
+    }
+    //Helper method for checking repeating patterns
+    private boolean isRepeating(String pattern) {
+
+        if (pattern.length() < 2) {//Checking for pattern length if it is smaller than 2 there is no repeating
+
+            return false;
+
+        }
+
+        if (pattern.charAt(0) == pattern.charAt(1)) {//Checking for repeating patterns
+
+            if (pattern.charAt(0) != pattern.charAt(pattern.length() - 1)) {
+
+                return false;
+
+            } else {
+
+                return true;
+
+            }
+
+
+        } else {
+
+            return false;
+
+        }
     }
     
     @Override
