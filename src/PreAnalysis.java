@@ -51,8 +51,35 @@ class StudentPreAnalysis extends PreAnalysis {
         //
         // For now, this returns null which means "run all algorithms"
         // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m <= 3 && n <= 20) {//Suggest Naive algorithm for short patterns and texts
+            return "Naive";
+        }
+        if (hasHighRepetition(pattern)) {//Suggest KMP algorithm for patterns that has repating prefixes
+            return "KMP";
+        }
+        if(m >= 10 && n >= 100){//Suggest Rabin Karp algorithm for long paterns and texts
+            return "RabinKarp";
+        }
+        if (text.chars().distinct().count() > 4) {//Suggest Boyer-Moore algorithm for texts with large alphabets (larger than 4 in this case)
+            return "BoyerMoore";
+        }
+        return "RabinKarp"; //Suggest Rabin Karp as default since its overall performance is average
+    }
+    private boolean hasHighRepetition(String pattern){
+        int length = pattern.length();
+        int checkLimit = Math.min(length, 30); //check 30 characters to maintain low analysis overhead
+        int repeatCount = 0;
+
+        for(int i = 2; i < checkLimit; i++){ //Checks the double character repeating prefixes (Aa, AB etc.)
+            if(pattern.charAt(i) == pattern.charAt(i-1) || pattern.charAt(i) == pattern.charAt(i-2)){
+                repeatCount++;
+            }
+        }
+        //If more than 50% of the checked part of pattern is repeating, suggest KMP.
+        return (double) repeatCount / checkLimit > 0.5;
     }
     
     @Override
