@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 class Naive extends Solution {
     static {
@@ -190,6 +192,7 @@ class RabinKarp extends Solution {
  * TODO: Implement Boyer-Moore algorithm
  * This is a homework assignment for students
  */
+
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
@@ -199,10 +202,56 @@ class BoyerMoore extends Solution {
     public BoyerMoore() {
     }
 
+    private Map<Character, Integer> badCharHeuristic(String pattern) {
+        Map<Character, Integer> badChar = new HashMap<>();
+        
+        // Fill the map with the last occurrence of each character
+        for (int i = 0; i < pattern.length(); i++) {
+            badChar.put(pattern.charAt(i), i);
+        }
+        return badChar;
+    }
+
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int m = pattern.length();
+        int n = text.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        if (m > n) return indicesToString(indices);
+
+        Map<Character, Integer> badChar = badCharHeuristic(pattern);
+
+        int s = 0; 
+
+        while (s <= (n - m)) {
+            int j = m - 1;
+
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j))
+                j--;
+
+            if (j < 0) {
+                indices.add(s);
+                // Shift: check if next char exists in pattern
+                if (s + m < n) {
+                    char nextChar = text.charAt(s + m);
+                    // If char exists, align it; otherwise shift by m+1
+                    int lastOccurrence = badChar.getOrDefault(nextChar, -1);
+                    s += m - lastOccurrence;
+                } else {
+                    s += 1;
+                }
+            } else {
+                char badCharInText = text.charAt(s + j);
+                int lastOccurrence = badChar.getOrDefault(badCharInText, -1);
+                s += Math.max(1, j - lastOccurrence);
+            }
+        }
+        return indicesToString(indices);
     }
 }
 
