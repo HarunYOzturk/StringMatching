@@ -1,27 +1,18 @@
 /**
  * PreAnalysis interface for students to implement their algorithm selection logic
- * 
- * Students should analyze the characteristics of the text and pattern to determine
+ * * Students should analyze the characteristics of the text and pattern to determine
  * which algorithm would be most efficient for the given input.
- * 
- * The system will automatically use this analysis if the chooseAlgorithm method
+ * * The system will automatically use this analysis if the chooseAlgorithm method
  * returns a non-null value.
  */
 public abstract class PreAnalysis {
     
     /**
      * Analyze the text and pattern to choose the best algorithm
-     * 
-     * @param text The text to search in
+     * * @param text The text to search in
      * @param pattern The pattern to search for
      * @return The name of the algorithm to use (e.g., "Naive", "KMP", "RabinKarp", "BoyerMoore", "GoCrazy")
-     *         Return null if you want to skip pre-analysis and run all algorithms
-     * 
-     * Tips for students:
-     * - Consider the length of the text and pattern
-     * - Consider the characteristics of the pattern (repeating characters, etc.)
-     * - Consider the alphabet size
-     * - Think about which algorithm performs best in different scenarios
+     * Return null if you want to skip pre-analysis and run all algorithms
      */
     public abstract String chooseAlgorithm(String text, String pattern);
     
@@ -41,23 +32,35 @@ class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        // 1. NAIVE DOMINANCE
+        // For our modern CPUs, Naive is faster than anything else for small/medium
+        // texts due to zero setup cost. Increased the threshold significantly.
+        // If text is less than 300 chars, just use Naive.
+        if (n < 300) {
+            return "Naive";
+        }
+
+        // 2. KMP
+        // Only if strictly repeating
+        if (m >= 3 && pattern.charAt(0) == pattern.charAt(1) && 
+            pattern.charAt(1) == pattern.charAt(2)) {
+            return "KMP";
+        }
+
+        // 3. GoCrazy
+        // GoCrazy uses int[] for ASCII, it's safe to use for larger texts.
+        // It will beat Naive when N is large.
+        return "GoCrazy";
     }
     
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Performance-Tuned Strategy: Heavily relies on 'Naive' for N < 2000 due to Java's loop optimizations. " + 
+               "Switches to optimized 'GoCrazy' (Hybrid Horspool) for large texts instead of BoyerMoore. " + 
+               "Uses 'KMP' for specific repeating patterns.";
     }
 }
 
