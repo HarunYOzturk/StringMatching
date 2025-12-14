@@ -38,5 +38,5 @@ During the development, we utilized the following resources to understand the ma
 ---
 
 ### Student Information
-**Muhammet Enes Varol - 22050111041**
-**Mehmet Emin Kaya - 22050111034**
+* **Muhammet Enes Varol - 22050111041**
+* **Mehmet Emin Kaya - 22050111034**
