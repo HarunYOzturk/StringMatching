@@ -1,3 +1,7 @@
+/*
+Muhammet Enes Varol - 22050111041
+Mehmet Emin Kaya - 22050111034
+*/
 /**
  * PreAnalysis interface for students to implement their algorithm selection logic
  * 
@@ -39,25 +43,93 @@ public abstract class PreAnalysis {
  */
 class StudentPreAnalysis extends PreAnalysis {
     
-    @Override
+   @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
+        if (pattern == null || pattern.isEmpty()) {
+            return "Naive";
+        }
+
+        int textLen = text.length();
+        int patternLen = pattern.length();
         
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        /* 
+        Strategy 1: Short Patterns (m <= 4)
+        For very short patterns, the overhead of building tables (for BM or KMP) is costlier than just searching directly. Naive is fastest here.
+        */
+        if (patternLen <= 4) {
+            return "Naive"; 
+        }
+
+        /*
+        Strategy 2: Periodic Patterns
+        If pattern repeats itself (e.g., "ABABAB"), KMP is mathematically guaranteed to be linear O(n), avoiding Naive's worst case.
+         */
+        if (isPatternPeriodic(pattern)) {
+            return "KMP";
+        }
+        
+        /*
+        Strategy 3: Long Patterns (m > 25)
+        Boyer-Moore shines with long patterns because it can make larger jumps (skips) when a mismatch occurs.
+        */
+        if (patternLen > 25) { 
+            return "BoyerMoore";
+        }
+        
+        /*
+        Strategy 4: Very Long Texts
+        Rabin-Karp's rolling hash is generally efficient for scanning large texts.
+        */
+        if (textLen > 10000) {
+             return "RabinKarp";
+        }
+
+        /*
+        Strategy 5: Default / Hybrid
+        For everything else, use our custom adaptive algorithm.
+        */
+        return "GoCrazy"; 
     }
     
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Hybrid Decision Tree: Naive for very short patterns (m<=4), KMP for periodic patterns, BoyerMoore for long non-periodic patterns (m>25), RabinKarp for long texts, and GoCrazy as the smart default for all remaining scenarios.";
+    }
+    
+    // --- Helper: Periodicity Check ---
+    // Uses the KMP failure function (LPS) to check if pattern consists of repeating units
+    private boolean isPatternPeriodic(String p) {
+        int m = p.length();
+        if (m <= 1) return false;
+
+        int[] lps = computeLPS(p);
+        int longestBorder = lps[m - 1]; 
+
+        // A pattern is periodic if the longest border length can divide the total length
+        int period = m - longestBorder;
+        
+        return longestBorder > 0 && (m % period == 0);
+    }
+    
+    // --- Helper: Compute LPS Array ---
+    // Standard KMP preprocessing table (Longest Prefix Suffix)
+    private int[] computeLPS(String pat) {
+        int m = pat.length();
+        int[] lps = new int[m];
+        int len = 0;
+        int i = 1;
+
+        while (i < m) {
+            if (pat.charAt(i) == pat.charAt(len)) {
+                lps[i++] = ++len;
+            } else {
+                if (len != 0)
+                    len = lps[len - 1];
+                else
+                    lps[i++] = 0;
+            }
+        }
+        return lps;
     }
 }
 
