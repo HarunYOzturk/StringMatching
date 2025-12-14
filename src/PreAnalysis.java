@@ -1,34 +1,16 @@
 /**
  * PreAnalysis interface for students to implement their algorithm selection logic
- * 
+ *
  * Students should analyze the characteristics of the text and pattern to determine
  * which algorithm would be most efficient for the given input.
- * 
+ *
  * The system will automatically use this analysis if the chooseAlgorithm method
  * returns a non-null value.
  */
 public abstract class PreAnalysis {
-    
-    /**
-     * Analyze the text and pattern to choose the best algorithm
-     * 
-     * @param text The text to search in
-     * @param pattern The pattern to search for
-     * @return The name of the algorithm to use (e.g., "Naive", "KMP", "RabinKarp", "BoyerMoore", "GoCrazy")
-     *         Return null if you want to skip pre-analysis and run all algorithms
-     * 
-     * Tips for students:
-     * - Consider the length of the text and pattern
-     * - Consider the characteristics of the pattern (repeating characters, etc.)
-     * - Consider the alphabet size
-     * - Think about which algorithm performs best in different scenarios
-     */
+
     public abstract String chooseAlgorithm(String text, String pattern);
-    
-    /**
-     * Get a description of your analysis strategy
-     * This will be displayed in the output
-     */
+
     public abstract String getStrategyDescription();
 }
 
@@ -38,26 +20,135 @@ public abstract class PreAnalysis {
  * This is where students write their pre-analysis logic
  */
 class StudentPreAnalysis extends PreAnalysis {
-    
+
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Empty pattern: in our implementations it matches everywhere; choose the cheapest.
+        if (m == 0) return "Naive";
+
+        // Very small input: overhead is not worth it
+        if (n <= 32 || m <= 2) {
+            return "Naive";
+        }
+
+        int alphaText = alphabetSize(text);
+        int alphaPattern = alphabetSize(pattern);
+
+        // Pattern periodicity via LPS (KMP preprocessing)
+        int[] lps = computeLPS(pattern);
+        int borderLen = lps[m - 1];
+        double borderRatio = borderLen / (double) m;
+
+        int distinctP = alphaPattern;
+        double diversityP = distinctP / (double) m;
+
+        double runRatio = runRatio(text);
+        double lastCharFreq = lastCharFrequency(text, pattern.charAt(m - 1));
+
+        // A) Highly periodic / low diversity pattern -> KMP usually wins
+        if (borderRatio >= 0.5 || diversityP < 0.4) {
+            return "KMP";
+        }
+
+        // B) Large text + large alphabet + diverse pattern -> BoyerMoore is strong
+        if (n > 2000 && alphaText > 30 && diversityP > 0.7) {
+            return "BoyerMoore";
+        }
+
+        // C) If the last pattern char is rare in text -> BM can skip a lot
+        if (m >= 5 && lastCharFreq < 0.05 && alphaText > 20) {
+            return "BoyerMoore";
+        }
+
+        // D) Very long + very repetitive text -> rolling hash / RK can be OK
+        if (n > 5000 && runRatio < 0.3) {
+            return "RabinKarp";
+        }
+
+        // E) For long-ish texts, use the hybrid strategy
+        if (n > 3000) {
+            return "GoCrazy";
+        }
+
+        // F) Medium case: prefer BM when alphabet is not tiny
+        if (m >= 4 && alphaText > 15) {
+            return "BoyerMoore";
+        }
+
+        // Default
+        return "GoCrazy";
     }
-    
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Heuristic selection based on pattern periodicity (LPS), alphabet size, diversity, run ratio, and last-character frequency.";
+    }
+
+    // ------------------- HELPER FUNCTIONS -------------------
+
+    // Unicode-safe alphabet size count (small array for ASCII, upgrade if needed)
+    private int alphabetSize(String s) {
+        boolean[] seen = new boolean[256];
+        int cnt = 0;
+        boolean upgraded = false;
+
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            if (!upgraded && c >= 256) {
+                boolean[] big = new boolean[Character.MAX_VALUE + 1]; // 65536
+                System.arraycopy(seen, 0, big, 0, seen.length);
+                seen = big;
+                upgraded = true;
+            }
+
+            if (!seen[c]) {
+                seen[c] = true;
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
+    private int[] computeLPS(String p) {
+        int m = p.length();
+        int[] lps = new int[m];
+        int len = 0;
+        int i = 1;
+
+        while (i < m) {
+            if (p.charAt(i) == p.charAt(len)) {
+                lps[i++] = ++len;
+            } else {
+                if (len != 0) len = lps[len - 1];
+                else lps[i++] = 0;
+            }
+        }
+        return lps;
+    }
+
+    private double runRatio(String text) {
+        if (text.length() <= 1) return 1.0;
+        int runs = 1;
+        for (int i = 1; i < text.length(); i++) {
+            if (text.charAt(i) != text.charAt(i - 1)) {
+                runs++;
+            }
+        }
+        return runs / (double) text.length();
+    }
+
+    private double lastCharFrequency(String text, char ch) {
+        if (text.isEmpty()) return 0.0;
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == ch) count++;
+        }
+        return count / (double) text.length();
     }
 }
 
@@ -73,22 +164,20 @@ class ExamplePreAnalysis extends PreAnalysis {
         int textLen = text.length();
         int patternLen = pattern.length();
 
-        // Simple heuristic example
         if (patternLen <= 3) {
-            return "Naive"; // For very short patterns, naive is often fastest
+            return "Naive";
         } else if (hasRepeatingPrefix(pattern)) {
-            return "KMP"; // KMP is good for patterns with repeating prefixes
+            return "KMP";
         } else if (patternLen > 10 && textLen > 1000) {
-            return "RabinKarp"; // RabinKarp can be good for long patterns in long texts
+            return "RabinKarp";
         } else {
-            return "Naive"; // Default to naive for other cases
+            return "Naive";
         }
     }
 
     private boolean hasRepeatingPrefix(String pattern) {
         if (pattern.length() < 2) return false;
 
-        // Check if first character repeats
         char first = pattern.charAt(0);
         int count = 0;
         for (int i = 0; i < Math.min(pattern.length(), 5); i++) {
@@ -103,16 +192,14 @@ class ExamplePreAnalysis extends PreAnalysis {
     }
 }
 
+
 /**
  * Instructor's pre-analysis implementation (for testing purposes only)
- * Students should NOT modify this class
  */
 class InstructorPreAnalysis extends PreAnalysis {
 
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // This is a placeholder for instructor testing
-        // Students should focus on implementing StudentPreAnalysis
         return null;
     }
 

@@ -1,124 +1,121 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+/**
+ * String Matching Algorithms (Analysis.java)
+ *
+ * Implemented Solution subclasses:
+ *  - Naive
+ *  - KMP
+ *  - RabinKarp
+ *  - BoyerMoore (bad-character heuristic)
+ *  - GoCrazy (hybrid strategy)
+ *
+ * Consistency rules:
+ *  - All algorithms return via Solution.indicesToString(List<Integer>)
+ *  - Empty pattern matches at every position 0..n (inclusive)
+ */
+
+/* =========================
+ * NAIVE
+ * ========================= */
 class Naive extends Solution {
     static {
         SUBCLASSES.add(Naive.class);
         System.out.println("Naive registered");
     }
 
-    public Naive() {
-    }
-
     @Override
     public String Solve(String text, String pattern) {
         List<Integer> indices = new ArrayList<>();
         int n = text.length();
         int m = pattern.length();
 
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+
+        if (m > n) return indicesToString(indices);
+
         for (int i = 0; i <= n - m; i++) {
-            int j;
-            for (j = 0; j < m; j++) {
-                if (text.charAt(i + j) != pattern.charAt(j)) {
-                    break;
-                }
-            }
-            if (j == m) {
-                indices.add(i);
-            }
+            int j = 0;
+            while (j < m && text.charAt(i + j) == pattern.charAt(j)) j++;
+            if (j == m) indices.add(i);
         }
 
         return indicesToString(indices);
     }
 }
 
+/* =========================
+ * KMP
+ * ========================= */
 class KMP extends Solution {
     static {
         SUBCLASSES.add(KMP.class);
         System.out.println("KMP registered");
     }
 
-    public KMP() {
-    }
-
     @Override
     public String Solve(String text, String pattern) {
         List<Integer> indices = new ArrayList<>();
         int n = text.length();
         int m = pattern.length();
 
-        // Handle empty pattern - matches at every position
         if (m == 0) {
-            for (int i = 0; i <= n; i++) {
-                indices.add(i);
-            }
+            for (int i = 0; i <= n; i++) indices.add(i);
             return indicesToString(indices);
         }
 
-        // Compute LPS (Longest Proper Prefix which is also Suffix) array
-        int[] lps = computeLPS(pattern);
+        if (m > n) return indicesToString(indices);
 
-        int i = 0; // index for text
-        int j = 0; // index for pattern
+        int[] lps = computeLPS(pattern);
+        int i = 0, j = 0;
 
         while (i < n) {
             if (text.charAt(i) == pattern.charAt(j)) {
-                i++;
-                j++;
+                i++; j++;
             }
 
             if (j == m) {
                 indices.add(i - j);
                 j = lps[j - 1];
             } else if (i < n && text.charAt(i) != pattern.charAt(j)) {
-                if (j != 0) {
-                    j = lps[j - 1];
-                } else {
-                    i++;
-                }
+                if (j != 0) j = lps[j - 1];
+                else i++;
             }
         }
 
         return indicesToString(indices);
     }
 
-    private int[] computeLPS(String pattern) {
-        int m = pattern.length();
+    private int[] computeLPS(String p) {
+        int m = p.length();
         int[] lps = new int[m];
-        int len = 0;
-        int i = 1;
-
-        lps[0] = 0;
+        int len = 0, i = 1;
 
         while (i < m) {
-            if (pattern.charAt(i) == pattern.charAt(len)) {
-                len++;
-                lps[i] = len;
-                i++;
+            if (p.charAt(i) == p.charAt(len)) {
+                lps[i++] = ++len;
             } else {
-                if (len != 0) {
-                    len = lps[len - 1];
-                } else {
-                    lps[i] = 0;
-                    i++;
-                }
+                if (len != 0) len = lps[len - 1];
+                else lps[i++] = 0;
             }
         }
-
         return lps;
     }
 }
 
+/* =========================
+ * RABIN–KARP
+ * ========================= */
 class RabinKarp extends Solution {
     static {
         SUBCLASSES.add(RabinKarp.class);
-        System.out.println("RabinKarp registered.");
+        System.out.println("RabinKarp registered");
     }
-
-    public RabinKarp() {
-    }
-
-    private static final int PRIME = 101; // A prime number for hashing
 
     @Override
     public String Solve(String text, String pattern) {
@@ -126,59 +123,41 @@ class RabinKarp extends Solution {
         int n = text.length();
         int m = pattern.length();
 
-        // Handle empty pattern - matches at every position
         if (m == 0) {
-            for (int i = 0; i <= n; i++) {
-                indices.add(i);
-            }
+            for (int i = 0; i <= n; i++) indices.add(i);
             return indicesToString(indices);
         }
 
-        if (m > n) {
-            return "";
-        }
+        if (m > n) return indicesToString(indices);
 
-        int d = 256; // Number of characters in the input alphabet
-        long patternHash = 0;
-        long textHash = 0;
-        long h = 1;
+        final int base = 256;
+        final int mod = 101;
 
-        // Calculate h = d^(m-1) % PRIME
-        for (int i = 0; i < m - 1; i++) {
-            h = (h * d) % PRIME;
-        }
+        int pHash = 0, tHash = 0, h = 1;
 
-        // Calculate hash value for pattern and first window of text
+        for (int i = 0; i < m - 1; i++) h = (h * base) % mod;
+
         for (int i = 0; i < m; i++) {
-            patternHash = (d * patternHash + pattern.charAt(i)) % PRIME;
-            textHash = (d * textHash + text.charAt(i)) % PRIME;
+            pHash = (base * pHash + pattern.charAt(i)) % mod;
+            tHash = (base * tHash + text.charAt(i)) % mod;
         }
 
-        // Slide the pattern over text one by one
-        for (int i = 0; i <= n - m; i++) {
-            // Check if hash values match
-            if (patternHash == textHash) {
-                // Check characters one by one
-                boolean match = true;
+        for (int s = 0; s <= n - m; s++) {
+            if (pHash == tHash) {
+                boolean ok = true;
                 for (int j = 0; j < m; j++) {
-                    if (text.charAt(i + j) != pattern.charAt(j)) {
-                        match = false;
+                    if (text.charAt(s + j) != pattern.charAt(j)) {
+                        ok = false;
                         break;
                     }
                 }
-                if (match) {
-                    indices.add(i);
-                }
+                if (ok) indices.add(s);
             }
 
-            // Calculate hash value for next window
-            if (i < n - m) {
-                textHash = (d * (textHash - text.charAt(i) * h) + text.charAt(i + m)) % PRIME;
-
-                // Convert negative hash to positive
-                if (textHash < 0) {
-                    textHash = textHash + PRIME;
-                }
+            if (s < n - m) {
+                tHash = (tHash - text.charAt(s) * h) % mod;
+                if (tHash < 0) tHash += mod;
+                tHash = (tHash * base + text.charAt(s + m)) % mod;
             }
         }
 
@@ -186,45 +165,127 @@ class RabinKarp extends Solution {
     }
 }
 
-/**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
- */
+/* =========================
+ * BOYER–MOORE (Unicode-safe)
+ * ========================= */
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
     }
 
-    public BoyerMoore() {
-    }
-
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+
+        if (m > n) return indicesToString(indices);
+
+        int[] last = buildLastTable(pattern);
+        int s = 0;
+
+        while (s <= n - m) {
+            int j = m - 1;
+
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) j--;
+
+            if (j < 0) {
+                indices.add(s);
+                if (s + m < n) {
+                    char next = text.charAt(s + m);
+                    int li = lastIndex(last, next);
+                    s += Math.max(1, m - li);
+                } else s++;
+            } else {
+                char bad = text.charAt(s + j);
+                int li = lastIndex(last, bad);
+                s += Math.max(1, j - li);
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    private int[] buildLastTable(String pattern) {
+        int[] last = new int[Character.MAX_VALUE + 1];
+        Arrays.fill(last, -1);
+        for (int i = 0; i < pattern.length(); i++) {
+            last[pattern.charAt(i)] = i;
+        }
+        return last;
+    }
+
+    private int lastIndex(int[] last, char c) {
+        return last[c];
     }
 }
 
-/**
- * TODO: Implement your own creative string matching algorithm
- * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
- */
+/* =========================
+ * GOCRAZY (Hybrid Strategy)
+ * ========================= */
 class GoCrazy extends Solution {
     static {
         SUBCLASSES.add(GoCrazy.class);
         System.out.println("GoCrazy registered");
     }
 
-    public GoCrazy() {
-    }
-
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            List<Integer> res = new ArrayList<>();
+            for (int i = 0; i <= n; i++) res.add(i);
+            return indicesToString(res);
+        }
+
+        if (m <= 3 || n <= 32)
+            return new Naive().Solve(text, pattern);
+
+        if (isPeriodic(pattern))
+            return new KMP().Solve(text, pattern);
+
+        if (n > 2000 && alphabetSize(text) > 20)
+            return new BoyerMoore().Solve(text, pattern);
+
+        return new RabinKarp().Solve(text, pattern);
+    }
+
+    private boolean isPeriodic(String p) {
+        int[] lps = computeLPS(p);
+        int m = p.length();
+        return lps[m - 1] >= m / 2;
+    }
+
+    private int[] computeLPS(String p) {
+        int[] lps = new int[p.length()];
+        int len = 0, i = 1;
+        while (i < p.length()) {
+            if (p.charAt(i) == p.charAt(len)) lps[i++] = ++len;
+            else if (len != 0) len = lps[len - 1];
+            else lps[i++] = 0;
+        }
+        return lps;
+    }
+
+    private int alphabetSize(String s) {
+        boolean[] seen = new boolean[Character.MAX_VALUE + 1];
+        int cnt = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (!seen[c]) {
+                seen[c] = true;
+                cnt++;
+            }
+        }
+        return cnt;
     }
 }
-
-
