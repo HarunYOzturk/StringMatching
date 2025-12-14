@@ -33,33 +33,147 @@ public abstract class PreAnalysis {
 }
 
 
-/**
- * Default implementation that students should modify
- * This is where students write their pre-analysis logic
- */
 class StudentPreAnalysis extends PreAnalysis {
-    
+
+    // Threshold constants
+    private static final int MIN_TEXT_NAIVE = 512;
+    private static final int LARGE_TEXT_THRESHOLD = 10000;
+    private static final int MIN_PATTERN_BM = 15;
+    private static final int LONG_PATTERN = 50;
+    private static final int VERY_LONG_PATTERN = 100;
+
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        if (text == null || pattern == null) return "Naive";
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // 1. If text is very short, just use Naive.
+        if (n < MIN_TEXT_NAIVE) {
+            return "Naive";
+        }
+
+        // 2. Empty or single char patterns -> Naive.
+        if (m <= 1) {
+            return "Naive";
+        }
+
+        // 3. For short patterns (2-5 chars), Naive is fast enough.
+        if (m <= 5) {
+            return "Naive";
+        }
+
+        // 4. Get pattern details (unique chars, repetition, etc.)
+        PatternAnalysis analysis = analyzePattern(pattern);
+
+        // 5. FOR VERY LARGE TEXTS
+        if (n > LARGE_TEXT_THRESHOLD) {
+            // If pattern is long and has many unique chars, BM is best.
+            if (m >= MIN_PATTERN_BM && analysis.uniqueChars > 10) {
+                return "BoyerMoore";
+            }
+            // If pattern repeats itself a lot (e.g. AAAAA), use KMP.
+            if (analysis.isHighlyRepetitive) {
+                return "KMP";
+            }
+            // Special algorithm for extremely long patterns.
+            if (m > VERY_LONG_PATTERN) {
+                return "GoCrazy";
+            }
+        }
+
+        // 6. LONG PATTERNS (50-100 chars)
+        if (m >= LONG_PATTERN && m < VERY_LONG_PATTERN) {
+            if (analysis.isHighlyRepetitive) {
+                return "KMP";
+            }
+            // More unique characters mean better skips for BM.
+            if (analysis.uniqueChars > 15) {
+                return "BoyerMoore";
+            }
+            // Use RabinKarp for standard long searches.
+            if (n > 5000) {
+                return "RabinKarp";
+            }
+        }
+
+        // 7. EXTRA LONG PATTERNS (>100 chars)
+        if (m >= VERY_LONG_PATTERN) {
+            if (analysis.isHighlyRepetitive) {
+                return "KMP";
+            }
+            return "GoCrazy";
+        }
+
+        // 8. MEDIUM PATTERNS (The most common case)
+        if (m >= 6 && m < LONG_PATTERN) {
+            if (analysis.repetitionRatio > 0.6) {
+                return "KMP";
+            }
+            if (analysis.uniqueChars > 10 && n > 2000 && m >= MIN_PATTERN_BM) {
+                return "BoyerMoore";
+            }
+            // Fallback to RabinKarp for medium inputs.
+            if (n > 1000 && n <= 5000 && m > 8) {
+                return "RabinKarp";
+            }
+        }
+
+        // 9. Default to Naive for everything else.
+        return "Naive";
     }
-    
+
+    /**
+     * Helper to check unique chars and repetition.
+     */
+    private PatternAnalysis analyzePattern(String pattern) {
+        PatternAnalysis result = new PatternAnalysis();
+        int m = pattern.length();
+
+        // Count different characters.
+        boolean[] seen = new boolean[256];
+        int uniqueCount = 0;
+
+        for (int i = 0; i < m; i++) {
+            char c = pattern.charAt(i);
+            if (c < 256 && !seen[c]) {
+                seen[c] = true;
+                uniqueCount++;
+            }
+        }
+        result.uniqueChars = uniqueCount;
+
+        // Check if the pattern repeats itself (checking first 30 chars).
+        int sampleSize = Math.min(m, 30);
+        char firstChar = pattern.charAt(0);
+        int matchCount = 0;
+
+        for (int i = 0; i < sampleSize; i++) {
+            if (pattern.charAt(i) == firstChar) {
+                matchCount++;
+            }
+        }
+
+        result.repetitionRatio = (double) matchCount / sampleSize;
+        // If more than 65% matches, it is repetitive.
+        result.isHighlyRepetitive = result.repetitionRatio > 0.65;
+
+        return result;
+    }
+
+    private static class PatternAnalysis {
+        int uniqueChars = 0;
+        double repetitionRatio = 0.0;
+        boolean isHighlyRepetitive = false;
+    }
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Simple Strategy: Naive for small inputs. Boyer-Moore for large texts with distinct patterns. KMP for repetitive patterns.";
     }
 }
+
 
 
 /**
