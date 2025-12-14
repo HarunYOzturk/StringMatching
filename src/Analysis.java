@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+
 
 class Naive extends Solution {
     static {
@@ -13,6 +15,7 @@ class Naive extends Solution {
     @Override
     public String Solve(String text, String pattern) {
         List<Integer> indices = new ArrayList<>();
+
         int n = text.length();
         int m = pattern.length();
 
@@ -190,6 +193,8 @@ class RabinKarp extends Solution {
  * TODO: Implement Boyer-Moore algorithm
  * This is a homework assignment for students
  */
+
+
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
@@ -201,8 +206,135 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // Empty pattern matches at every position
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If pattern longer than text then no matches
+        if (m > n) {
+            return "";
+        }
+
+        int[] badChar = buildBadCharacterTable(pattern);
+        int[] goodSuffix = buildGoodSuffixTable(pattern);
+
+        int s = 0;
+
+        while (s <= n - m) {
+            int j = m - 1;
+
+            // Compare from right to left
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            // Full match found
+            if (j < 0) {
+                indices.add(s);
+                // Shift by good suffix for full match
+                s += goodSuffix[0];
+            } else {
+                int c = text.charAt(s + j) & 0xFF;
+                int badShift = j - badChar[c];
+                if (badShift < 1) {
+                    badShift = 1;
+                }
+                int goodShift = goodSuffix[j];
+                s += Math.max(badShift, goodShift);
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    /**
+     * Bad character table:
+     * For each character c, stores the last index where c appears in pattern,
+     * or -1 if it does not appear.
+     */
+
+    private int[] buildBadCharacterTable(String pattern) {
+
+        final int ALPHABET_SIZE = 256; // same as RabinKarp
+        int[] badChar = new int[ALPHABET_SIZE];
+        Arrays.fill(badChar, -1);
+
+        for (int i = 0; i < pattern.length(); i++) {
+            badChar[pattern.charAt(i) & 0xFF] = i;
+        }
+        return badChar;
+    }
+
+    /**
+     * Computes the suffix array used for the good suffix rule.
+     * suff[i] = length of the longest suffix of pattern[0..i]
+     * that is also a suffix of the whole pattern.
+     */
+
+    private int[] buildSuffixes(String pattern) {
+        int m = pattern.length();
+        int[] suff = new int[m];
+
+        suff[m - 1] = m;
+        int g = m - 1;
+        int f = 0;
+
+        for (int i = m - 2; i >= 0; i--) {
+            if (i > g && suff[i + m - 1 - f] < i - g) {
+                suff[i] = suff[i + m - 1 - f];
+            } else {
+                if (i < g) {
+                    g = i;
+                }
+                f = i;
+                while (g >= 0 && pattern.charAt(g) == pattern.charAt(g + m - 1 - f)) {
+                    g--;
+                }
+                suff[i] = f - g;
+            }
+        }
+
+        return suff;
+    }
+
+    /**
+     * Good suffix table:
+     * goodSuffix[j] = shift amount when mismatch occurs at position j.
+     */
+    private int[] buildGoodSuffixTable(String pattern) {
+
+        int m = pattern.length();
+        int[] goodSuffix = new int[m];
+        int[] suff = buildSuffixes(pattern);
+
+        Arrays.fill(goodSuffix, m);
+
+        int j = 0;
+        // 1st case: prefixes that are also suffixes
+        for (int i = m - 1; i >= 0; i--) {
+            if (suff[i] == i + 1) {
+                for (; j < m - 1 - i; j++) {
+                    if (goodSuffix[j] == m) {
+                        goodSuffix[j] = m - 1 - i;
+                    }
+                }
+            }
+        }
+
+        // 2nd case: other suffixes
+        for (int i = 0; i <= m - 2; i++) {
+            goodSuffix[m - 1 - suff[i]] = m - 1 - i;
+        }
+
+        return goodSuffix;
     }
 }
 
@@ -211,6 +343,8 @@ class BoyerMoore extends Solution {
  * This is a homework assignment for students
  * Be creative! Try to make it efficient for specific cases
  */
+
+// My GoCrazy method is designed for cases where the pattern is longer than the text.
 class GoCrazy extends Solution {
     static {
         SUBCLASSES.add(GoCrazy.class);
@@ -223,8 +357,84 @@ class GoCrazy extends Solution {
     @Override
     public String Solve(String text, String pattern) {
         // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+
+
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        if (m > n) {
+            return "";
+        }
+
+        // Use fast bit-parallel search for short patterns
+        if (m <= 64) {
+            long[] masks = buildBitMasks(pattern);
+            long state = 0L;
+            long matchBit = 1L << (m - 1);
+
+            for (int i = 0; i < n; i++) {
+                state = ((state << 1) | 1L) & masks[text.charAt(i)];
+                if ((state & matchBit) != 0L) {
+                    indices.add(i - m + 1);
+                }
+            }
+
+            return indicesToString(indices);
+        }
+
+        // Return to a Boyer Moore Horspool style scan for longer patterns
+        int[] shift = buildBadCharacterShifts(pattern);
+        int last = m - 1;
+        char lastChar = pattern.charAt(last);
+        int i = 0;
+
+        while (i <= n - m) {
+            char tail = text.charAt(i + last);
+            if (tail == lastChar) {
+                int j = last - 1;
+                while (j >= 0 && text.charAt(i + j) == pattern.charAt(j)) {
+                    j--;
+                }
+                if (j < 0) {
+                    indices.add(i);
+                    i += shift[lastChar];
+                    continue;
+                }
+            }
+            i += shift[tail];
+        }
+
+        return indicesToString(indices);
+    }
+
+
+    private int[] buildBadCharacterShifts(String pattern) {
+        int m = pattern.length();
+        int[] shift = new int[65536];
+        Arrays.fill(shift, m);
+        for (int i = 0; i < m - 1; i++) {
+            shift[pattern.charAt(i)] = m - 1 - i;
+        }
+        shift[pattern.charAt(m - 1)] = 1;
+        return shift;
     }
 }
+
+    private long[] buildBitMasks(String pattern) {
+        long[] masks = new long[65536];
+        for (int i = 0; i < pattern.length(); i++) {
+            masks[pattern.charAt(i)] |= (1L << i);
+        }
+        return masks;
+    }
+
 
 
