@@ -1,5 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 class Naive extends Solution {
     static {
@@ -200,9 +199,109 @@ class BoyerMoore extends Solution {
     }
 
     @Override
-    public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+   public String Solve(String text, String pattern) {
+        List<Integer> indices = new ArrayList<>();
+        int textLen = text.length();
+        int patLen = pattern.length();
+
+        //Empty pattern mean matches at every position
+        if (patLen == 0) {
+            for (int i = 0; i <= textLen; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // Pattern longer than text means no match
+        if (patLen > textLen) {
+            return "";
+        }
+
+        Map<Character, Integer> badChar = badCharTable(pattern);
+        int[] goodSuffix = goodSuffixTable(pattern);
+
+        int shift = 0;
+
+        while (shift <= textLen - patLen) {
+            int j = patLen - 1;
+
+            // Compare characters from right to left
+            while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                // Match found
+                indices.add(shift);
+
+                // shift using full match good-suffix rule
+                shift += goodSuffix[0];
+            } else {
+                char mismatchChar = text.charAt(shift + j);
+
+                // Shift based bad character rule
+                int badCharIndex = badChar.getOrDefault(mismatchChar, -1);
+                int badCharShift = j - badCharIndex;
+                if (badCharShift < 1) {
+                    badCharShift = 1;
+                }
+
+                // Shift based good suffix rule
+                int goodSuffixShift = goodSuffix[j];
+
+                // Choose the larger shift
+                shift += Math.max(badCharShift, goodSuffixShift);
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    private Map<Character, Integer> badCharTable(String pattern) {
+        Map<Character, Integer> badChar = new HashMap<>();
+        
+        //Hold the rightmost index of each character
+        for (int i = 0; i < pattern.length(); i++) {
+            badChar.put(pattern.charAt(i), i);
+        }
+
+        return badChar;
+    }
+
+    private int[] goodSuffixTable(String pattern) {
+        int patLen = pattern.length();
+        int[] goodSuffix = new int[patLen];
+        int[] border = new int[patLen + 1];
+
+        int i = patLen;
+        int j = patLen + 1;
+        border[i] = j;
+
+        // Build good suffix table
+        while (i > 0) {
+            while (j <= patLen && pattern.charAt(i - 1) != pattern.charAt(j - 1)) {
+                if (goodSuffix[j - 1] == 0) {
+                    goodSuffix[j - 1] = j - i;
+                }
+                j = border[j];
+            }
+            i--;
+            j--;
+            border[i] = j;
+        }
+
+        // Build the remaining values
+        j = border[0];
+        for (i = 0; i < patLen; i++) {
+            if (goodSuffix[i] == 0) {
+                goodSuffix[i] = j;
+            }
+            if (i == j) {
+                j = border[j];
+            }
+        }
+
+        return goodSuffix;
     }
 }
 
