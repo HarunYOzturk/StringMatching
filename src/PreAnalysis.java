@@ -52,7 +52,34 @@ class StudentPreAnalysis extends PreAnalysis {
         // For now, this returns null which means "run all algorithms"
         // Students should replace this with their logic
         
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int patternLen = pattern.length();
+        int textLen = text.length();
+
+        if(patternLen<=6){
+            return "Naive";
+        }
+        if(hasRepeatingPrefix(pattern)){
+            return "KMP";
+        }
+
+        if(patternLen > 17){
+            return "BoyerMoore";
+        }
+
+        // My own algorithm fast in medium patterns(4-10 chars) .It uses fast CPU bitwise operations (<<) and avoids expensive overhead
+        return "GoCrazy"; 
+    }
+
+    private boolean hasRepeatingPrefix(String pattern) {
+        if (pattern.length() < 2) return false;
+
+        // Check if first character repeats
+        char first = pattern.charAt(0);
+        int count = 0;
+        for (int i = 0; i < Math.min(pattern.length(), 5); i++) {
+            if (pattern.charAt(i) == first) count++;
+        }
+        return count >= 3;
     }
     
     @Override

@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map; 
 
 class Naive extends Solution {
     static {
@@ -199,11 +201,67 @@ class BoyerMoore extends Solution {
     public BoyerMoore() {
     }
 
+    
+
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int textLen = text.length();
+        int patternLen = pattern.length();
+
+        // Edge Case: If pattern is empty, it technically matches everywhere (0 to N).
+        if (patternLen == 0) {
+            for (int i = 0; i <= textLen; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        // Edge Case: Pattern cannot be longer than text.
+        if (patternLen > textLen) return "";
+
+        // We use HashMap to support all Unicode characters (not just ASCII).
+        Map<Character, Integer> shiftGuide = new HashMap<>();
+
+        for (int i = 0; i < patternLen; i++) {
+            shiftGuide.put(pattern.charAt(i), i);
+        }
+        
+        // 'anchor' aligns the beginning of the pattern with the text.
+        int anchor = 0;
+
+        
+        while (anchor <= textLen - patternLen) {
+            int cursor = patternLen - 1; // Start scanning from right to left
+            
+            // Compare characters starting from the end of the pattern
+            while (cursor >= 0 && pattern.charAt(cursor) == text.charAt(anchor + cursor)) {
+                cursor--;
+            }
+
+            if (cursor < 0) {
+                
+                indices.add(anchor);
+
+                // Check the character immediately after the pattern in the text.
+                if (anchor + patternLen < textLen) {
+                    char charAfterPattern = text.charAt(anchor + patternLen);
+                    int charPos = shiftGuide.getOrDefault(charAfterPattern, -1);
+                    anchor += patternLen - charPos;
+                } else {
+                    anchor += 1;// End of text reached, just shift by 1
+                }
+            } else {
+                // Identify the bad character in the text.
+                char badChar = text.charAt(anchor + cursor);
+                int badCharIndex = shiftGuide.getOrDefault(badChar, -1);
+
+                // Shift pattern to align bad character with its last occurrence in pattern.
+                // Math.max ensures we never shift backwards.
+                anchor += Math.max(1, cursor - badCharIndex);
+            }
+        }
+
+        return indicesToString(indices);
     }
+
 }
 
 /**
@@ -220,11 +278,72 @@ class GoCrazy extends Solution {
     public GoCrazy() {
     }
 
+    
+
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+
+        int textLen = text.length();
+        int patternLen = pattern.length();
+        List<Integer> indices = new ArrayList<>();
+
+        // Edge Case: Empty pattern technically matches at every position (0 to N).
+        if (patternLen == 0) {
+            for (int i = 0; i <= textLen; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // Edge Case
+        if (patternLen > textLen) {
+            return "";
+        }
+
+        int h = 1;
+        for (int i = 0; i < patternLen - 1; i++) {
+            //we use bitwise shift (<< 5) which is equivalent to (* 32).
+            // This is much faster on the CPU.
+            h = h << 5;
+
+        }
+
+        int patternHash = 0;
+        int textHash = 0;
+
+        for (int i = 0; i < patternLen; i++) {
+            // We rely on Java's native "Integer Overflow" mechanism (implicit modulo 2^32).
+            // This avoids expensive modulo (%) operations and negative number logic issues.
+            patternHash = (patternHash << 5) + pattern.charAt(i);
+            textHash = (textHash << 5) + text.charAt(i);
+        }
+
+        // Sliding Window (Rolling Hash)
+        for (int anchor = 0; anchor <= textLen - patternLen; anchor++) {
+            if (patternHash == textHash) {
+                boolean match = true;
+                // Collision Check: Verify characters one by one to avoid false positives.
+                for (int j = 0; j < patternLen; j++) {
+                    if (text.charAt(anchor + j) != pattern.charAt(j)) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    indices.add(anchor);
+                }
+            }
+
+            // Rolling Step: Update hash for the next window in O(1) time
+            if (anchor < textLen - patternLen) {
+                textHash = textHash - (text.charAt(anchor) * h);
+                textHash = textHash << 5;
+                textHash = textHash + (text.charAt(anchor + patternLen));
+            }
+        }
+
+        return indicesToString(indices);
+
     }
 }
-
-
