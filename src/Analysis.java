@@ -199,10 +199,92 @@ class BoyerMoore extends Solution {
     public BoyerMoore() {
     }
 
+    private static int[] buildBadCharacterTable(String pattern) {
+        int[] last = new int[Character.MAX_VALUE + 1];
+        for (int i = 0; i < last.length; i++) {
+            last[i] = -1;
+        }
+        for (int i = 0; i < pattern.length(); i++) {
+            last[pattern.charAt(i)] = i;
+        }
+        return last;
+    }
+
+    private static int[] buildGoodSuffixShift(String pattern) {
+        int m = pattern.length();
+        int[] shift = new int[m + 1];
+        int[] bpos = new int[m + 1];
+
+        int i = m;
+        int j = m + 1;
+        bpos[i] = j;
+
+        while (i > 0) {
+            while (j <= m && pattern.charAt(i - 1) != pattern.charAt(j - 1)) {
+                if (shift[j] == 0) {
+                    shift[j] = j - i;
+                }
+                j = bpos[j];
+            }
+            i--;
+            j--;
+            bpos[i] = j;
+        }
+
+        j = bpos[0];
+        for (i = 0; i <= m; i++) {
+            if (shift[i] == 0) {
+                shift[i] = j;
+            }
+            if (i == j) {
+                j = bpos[j];
+            }
+        }
+
+        return shift;
+    }
+
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        if (n == 0 || m > n) {
+            return indicesToString(indices);
+        }
+
+        int[] badChar = buildBadCharacterTable(pattern);
+        int[] goodSuffix = buildGoodSuffixShift(pattern);
+
+        int s = 0;
+        while (s <= n - m) {
+            int j = m - 1;
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                indices.add(s);
+                int shiftBy = goodSuffix[0];
+                s += (shiftBy > 0 ? shiftBy : 1);
+            } else {
+                char c = text.charAt(s + j);
+                int bcShift = j - badChar[c];
+                int gsShift = goodSuffix[j + 1];
+                s += Math.max(1, Math.max(bcShift, gsShift));
+            }
+        }
+
+        return indicesToString(indices);
     }
 }
 
@@ -222,9 +304,44 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            List<Integer> all = new ArrayList<>();
+            for (int i = 0; i <= n; i++)
+                all.add(i);
+            return indicesToString(all);
+        }
+        if (n == 0 || m > n) {
+            return "";
+        }
+
+        // Quick-Search shift table
+        int[] shift = new int[Character.MAX_VALUE + 1];
+        for (int i = 0; i < shift.length; i++)
+            shift[i] = m + 1;
+        for (int i = 0; i < m; i++)
+            shift[pattern.charAt(i)] = m - i;
+
+        List<Integer> res = new ArrayList<>();
+        int i = 0;
+
+        while (i <= n - m) {
+            int j = 0;
+            while (j < m && text.charAt(i + j) == pattern.charAt(j))
+                j++;
+
+            if (j == m)
+                res.add(i);
+
+            int next = i + m;
+            if (next >= n)
+                break;
+            i += shift[text.charAt(next)];
+        }
+
+        return indicesToString(res);
     }
+
 }
-
-
