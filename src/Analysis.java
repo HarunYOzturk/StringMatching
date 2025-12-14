@@ -1,5 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+
 
 class Naive extends Solution {
     static {
@@ -196,15 +199,101 @@ class BoyerMoore extends Solution {
         System.out.println("BoyerMoore registered");
     }
 
-    public BoyerMoore() {
-    }
+    public BoyerMoore() {}
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Empty pattern: matches at every position (same behavior as Naive / KMP)
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If text is empty or pattern is longer than text, there is no match
+        if (n == 0 || m > n) {
+            return indicesToString(indices);
+        }
+
+        // 1) Build the bad character table (supports full Unicode)
+        Map<Character, Integer> badChar = buildBadCharTable(pattern);
+
+        // 2) Main search loop
+        int s = 0; // s = current shift of the pattern over the text
+        while (s <= n - m) {
+            int j = m - 1;
+
+            // Compare pattern and text from right to left
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                // Full match found at shift s
+                indices.add(s);
+
+                // Shift the pattern for the next possible match
+                if (s + m < n) {
+                    char nextChar = text.charAt(s + m);
+                    int lastOcc = getLastOccurrence(badChar, nextChar);
+                    int shift = m - lastOcc;
+                    if (shift < 1) {
+                        shift = 1;
+                    }
+                    s += shift;
+                } else {
+                    s += 1;
+                }
+
+            } else {
+                // Mismatch occurred at index j
+                char mismatch = text.charAt(s + j);
+                int lastOcc = getLastOccurrence(badChar, mismatch); // last occurrence in pattern, or -1
+
+                // Compute shift amount using the bad character rule
+                int shift = j - lastOcc;
+                if (shift < 1) {
+                    shift = 1; // Always shift by at least 1
+                }
+
+                s += shift;
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    /**
+     * Builds the bad character table using a HashMap.
+     * For each character in the pattern, stores the last index where it appears.
+     */
+    private Map<Character, Integer> buildBadCharTable(String pattern) {
+        Map<Character, Integer> badChar = new HashMap<>();
+
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            badChar.put(c, i);  // last occurrence will overwrite previous ones
+        }
+
+        return badChar;
+    }
+
+    /**
+     * Safely gets the last occurrence of character c from the badChar table.
+     * If c does not appear in the pattern, returns -1.
+     */
+    private int getLastOccurrence(Map<Character, Integer> badChar, char c) {
+        Integer val = badChar.get(c);
+        return (val == null) ? -1 : val;
     }
 }
+
 
 /**
  * TODO: Implement your own creative string matching algorithm
@@ -217,14 +306,72 @@ class GoCrazy extends Solution {
         System.out.println("GoCrazy registered");
     }
 
-    public GoCrazy() {
-    }
+    public GoCrazy() {}
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Empty pattern: matches at every position (same behavior as others)
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If text is empty or pattern is longer than text, there is no match
+        if (n == 0 || m > n) {
+            return indicesToString(indices);
+        }
+
+        // Special case: single character pattern
+        if (m == 1) {
+            char p = pattern.charAt(0);
+            for (int i = 0; i < n; i++) {
+                if (text.charAt(i) == p) {
+                    indices.add(i);
+                }
+            }
+            return indicesToString(indices);
+        }
+
+        // Main loop: try all possible shifts
+        for (int s = 0; s <= n - m; s++) {
+            boolean match = true;
+
+            int left = 0;
+            int right = m - 1;
+
+            // Compare from both ends towards the center
+            while (left <= right) {
+                if (text.charAt(s + left) != pattern.charAt(left)) {
+                    match = false;
+                    break;
+                }
+
+                if (left != right) { // avoid double-checking the middle character
+                    if (text.charAt(s + right) != pattern.charAt(right)) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                left++;
+                right--;
+            }
+
+            if (match) {
+                indices.add(s);
+            }
+        }
+
+        return indicesToString(indices);
     }
 }
+
 
 

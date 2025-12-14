@@ -37,27 +37,85 @@ public abstract class PreAnalysis {
  * Default implementation that students should modify
  * This is where students write their pre-analysis logic
  */
+// Your custom pre-analysis class.
+// This class decides which string matching algorithm to use
+// before actually running any of them.
 class StudentPreAnalysis extends PreAnalysis {
-    
+
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        // 1) Trivial cases: empty pattern or pattern longer than text.
+        // In these cases, any algorithm will be fast, so we simply use Naive.
+        if (m == 0 || m > n) {
+            return "Naive";
+        }
+
+        // 2) Very short patterns: preprocessing cost is not worth it.
+        // For length 1 or 2, the Naive algorithm is usually competitive.
+        if (m <= 2) {
+            return "Naive";
+        }
+
+        // 3) Compute basic statistics about the pattern.
+        // - alphabetSize: number of distinct characters in the pattern
+        // - repetitionRatio: how repetitive the pattern is (smaller => more repetition)
+        java.util.Set<Character> alphabet = new java.util.HashSet<>();
+        for (int i = 0; i < m; i++) {
+            alphabet.add(pattern.charAt(i));
+        }
+        int alphabetSize = alphabet.size();
+        double repetitionRatio = (double) alphabetSize / m;  // in (0, 1]
+
+        // 4) Highly repetitive patterns -> KMP.
+        // KMP is strong when the pattern has a lot of internal structure
+        // and repeating prefixes/suffixes.
+        if (repetitionRatio < 0.30 && m >= 5) {
+            return "KMP";
+        }
+
+        // 5) Very long text + short, diverse pattern -> RabinKarp.
+        // For very long texts with many different characters and a relatively
+        // short pattern, hashing can work well in practice.
+        if (n > 5000 && m < 50 && alphabetSize > m / 2) {
+            return "RabinKarp";
+        }
+
+        // 6) Long text + reasonably long pattern + larger alphabet -> BoyerMoore.
+        // Boyer-Moore benefits from larger alphabets and longer patterns
+        // because bad-character skips tend to be larger.
+        if (n > 2000 && m >= 5 && alphabetSize >= 5) {
+            return "BoyerMoore";
+        }
+
+        // 7) Check symmetry of the pattern for GoCrazy.
+        // GoCrazy compares characters from both ends toward the center,
+        // so it can be effective on patterns that are somewhat symmetric.
+        int matchEnds = 0;
+        for (int i = 0; i < m / 2; i++) {
+            if (pattern.charAt(i) == pattern.charAt(m - 1 - i)) {
+                matchEnds++;
+            }
+        }
+        if (pattern.charAt(0) == pattern.charAt(m - 1) || matchEnds > m / 4) {
+            return "GoCrazy";
+        }
+
+        // 8) Default fallback: if none of the above conditions triggered,
+        // choose the Naive algorithm. It is simple and robust for many cases.
+        return "Naive";
     }
-    
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        // This description is shown in the report section of the tester.
+        return "Heuristic strategy based on pattern length, repetition, alphabet size "
+             + "and symmetry: very short patterns use Naive, highly repetitive patterns "
+             + "use KMP, very long texts with short and diverse patterns use Rabin-Karp, "
+             + "long texts with larger alphabets use Boyer-Moore, symmetric patterns "
+             + "use GoCrazy, and Naive is used as a safe fallback in other cases.";
     }
 }
 
