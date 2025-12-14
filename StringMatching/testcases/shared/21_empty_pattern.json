@@ -1,0 +1,7 @@
+{
+  "name": "Empty Pattern",
+  "text": "ABCDE",
+  "pattern": "",
+  "expected": "0,1,2,3,4,5"
+}
+

@@ -1,0 +1,7 @@
+{
+  "name": "Unicode Characters",
+  "text": "Hello世界Hello世界Hello世界",
+  "pattern": "世界",
+  "expected": "5,12,19"
+}
+

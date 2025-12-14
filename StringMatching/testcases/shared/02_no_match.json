@@ -1,0 +1,7 @@
+{
+  "name": "No Match",
+  "text": "AABAACAADAABAABA",
+  "pattern": "XYZ",
+  "expected": ""
+}
+

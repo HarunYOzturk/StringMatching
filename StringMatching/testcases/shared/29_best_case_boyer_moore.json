@@ -1,0 +1,7 @@
+{
+  "name": "Best Case for Boyer-Moore",
+  "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  "pattern": "XYZ",
+  "expected": "23,49,75"
+}
+

@@ -1,0 +1,7 @@
+{
+  "name": "Pattern at Boundaries",
+  "text": "XYZABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  "pattern": "XYZ",
+  "expected": "0,26"
+}
+

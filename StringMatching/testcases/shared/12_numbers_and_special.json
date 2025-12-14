@@ -1,0 +1,7 @@
+{
+  "name": "Numbers and Special Characters",
+  "text": "abc123!@#def123!@#ghi123!@#",
+  "pattern": "123!@#",
+  "expected": "3,12,21"
+}
+

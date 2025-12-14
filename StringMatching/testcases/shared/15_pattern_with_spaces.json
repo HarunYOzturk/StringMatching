@@ -1,0 +1,7 @@
+{
+  "name": "Pattern with Spaces",
+  "text": "hello world hello world hello world",
+  "pattern": "lo wo",
+  "expected": "3,15,27"
+}
+
