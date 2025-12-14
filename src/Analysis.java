@@ -1,5 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 class Naive extends Solution {
     static {
@@ -186,10 +185,11 @@ class RabinKarp extends Solution {
     }
 }
 
-/**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
- */
+
+
+
+
+
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
@@ -201,9 +201,82 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+
+        // ArrayList for storing the indices where the matches are found.    
+        ArrayList<Integer> indices = new ArrayList<>();
+
+        // Map used for the Bad Match Table
+        Map<Character, Integer> table = getBadMatchTable(pattern);
+        
+        // Getting the lengths of the text and pattern
+        int n = text.length();
+        int m = pattern.length();
+
+        // If pattern is an empty string, we say that the pattern is found at every location
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If the pattern is longer than the text or the text is empty, we say that no pattern is found
+        if (m > n || n == 0) {
+            return indicesToString(indices);
+        }
+            
+
+        int i = 0; // shift of the pattern relative to text
+        
+        while (i <= n - m) {
+
+            int j = m - 1;  // index from where we start the comparison each time
+            
+            // If characters are matching, keep reducing the value of j
+            while (j >= 0 && pattern.charAt(j) == text.charAt(i + j)) {
+                j--;
+            }
+            
+            // If pattern is found, this means j is -1
+            if (j < 0) {
+                // add that index to the arraylist
+                indices.add(i);
+                // Move to next possible position. We move to the immediate next position in order to cover all possible cases
+                // inclusing the overlapping ones
+                i += 1;
+
+            // if a mismatch has occured    
+            } else {
+                // get the character at which the mismatch occured. This is taken from the text, not the pattern
+                char mismatchedChar = text.charAt(i + j);
+                
+                // Get the places that we need to shift using the bad match table 
+                int shift = j - table.getOrDefault(mismatchedChar, -1);
+                i += Math.max(1, shift);
+            }
+        }
+        
+        // convert the arraylist to a string and return
+        return indicesToString(indices);
+}
+
+    public static HashMap<Character, Integer> getBadMatchTable(String pattern) {
+
+        // get the length of the pattern
+        int m = pattern.length();
+
+        // create a hashmap that will be used as the bad match table
+        HashMap<Character, Integer> table = new HashMap<>();
+        
+        // For each character in the pattern, store its rightmost position
+        // (except the last character)
+        for (int i = 0; i < m - 1; i++) {
+            table.put(pattern.charAt(i), i);
+        }
+        
+        return table;
     }
+
 }
 
 /**
@@ -226,5 +299,3 @@ class GoCrazy extends Solution {
         throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
     }
 }
-
-
