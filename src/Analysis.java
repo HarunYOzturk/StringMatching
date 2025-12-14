@@ -193,7 +193,7 @@ class RabinKarp extends Solution {
 class BoyerMoore extends Solution {
     static {
         SUBCLASSES.add(BoyerMoore.class);
-        System.out.println("BoyerMoore registered");
+        System.out.println("BoyerMoore registered.");
     }
 
     public BoyerMoore() {
@@ -201,20 +201,140 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int m = pattern.length();
+        int n = text.length();
+
+        // If there is no pattern
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+
+        if (m > n) return "";
+
+        // Bad Character Heuristic (Hybrid: Array for ASCII + Map for Unicode)
+        int[] badCharTable = new int[256];
+        java.util.Map<Character, Integer> badCharMap = null;
+
+        // Initialize array with -1
+        java.util.Arrays.fill(badCharTable, -1);
+
+        boolean hasUnicode = false;
+        for (int i = 0; i < m; i++) {
+            char c = pattern.charAt(i);
+            if (c < 256) {
+                badCharTable[c] = i;
+            } else {
+                if (badCharMap == null) badCharMap = new java.util.HashMap<>();
+                badCharMap.put(c, i);
+                hasUnicode = true;
+            }
+        }
+
+        // Good Suffix Heuristic
+        int[] goodSuffixTable = preprocessGoodSuffix(pattern);
+
+        int shift = 0;
+
+        while (shift <= (n - m)) {
+            int j = m - 1;
+
+            // Keep reducing index j of pattern while characters of pattern and text are matching
+            while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j))  j--;
+
+            if (j < 0) {
+                // Match found
+                indices.add(shift);
+
+                // Shifting the pattern so that the next character in text aligns
+                if (shift + m < n)
+                    shift += goodSuffixTable[0];
+                 else
+                    shift += 1;
+
+            } else {
+                // Mismatch at index j
+                char charInText = text.charAt(shift + j);
+
+                // Get Bad Character shift
+                int badCharValue;
+                if (charInText < 256) {
+                    badCharValue = badCharTable[charInText];
+                } else {
+                    badCharValue = (badCharMap != null) ? badCharMap.getOrDefault(charInText, -1) : -1;
+                }
+
+                int badCharShift = j - badCharValue;
+                int goodSuffixShift = goodSuffixTable[j];
+
+                // Using the maximum of the two heuristics
+                shift += Math.max(1, Math.max(badCharShift, goodSuffixShift));
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    // Good Suffix Heuristic Preprocessing
+    private int[] preprocessGoodSuffix(String pattern) {
+        int m = pattern.length();
+        int[] table = new int[m];
+        int[] suffixes = computeSuffixes(pattern);
+
+        // Case 1: The matching suffix occurs elsewhere in the pattern
+        java.util.Arrays.fill(table, m);
+
+        int j = 0;
+        for (int i = m - 1; i >= -1; --i) {
+            if (i == -1 || suffixes[i] == i + 1) {
+                for (; j < m - 1 - i; ++j) {
+                    if (table[j] == m) table[j] = m - 1 - i;
+                }
+            }
+        }
+
+        // Case 2: A prefix of the pattern matches a suffix of the matching suffix
+        for (int i = 0; i <= m - 2; ++i) {
+            table[m - 1 - suffixes[i]] = m - 1 - i;
+        }
+
+        return table;
+    }
+
+    // To compute suffixes array for Good Suffix
+    private int[] computeSuffixes(String pattern) {
+        int m = pattern.length();
+        int[] suffixes = new int[m];
+        suffixes[m - 1] = m;
+        int g = m - 1;
+        int f = m - 1;
+
+        for (int i = m - 2; i >= 0; --i) {
+            if (i > g && suffixes[i + m - 1 - f] < i - g) {
+                suffixes[i] = suffixes[i + m - 1 - f];
+            } else {
+                if (i < g) g = i;
+                f = i;
+                while (g >= 0 && pattern.charAt(g) == pattern.charAt(g + m - 1 - f)) {
+                    g--;
+                }
+                suffixes[i] = f - g;
+            }
+        }
+        return suffixes;
     }
 }
 
 /**
  * TODO: Implement your own creative string matching algorithm
  * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
  */
 class GoCrazy extends Solution {
+
     static {
         SUBCLASSES.add(GoCrazy.class);
-        System.out.println("GoCrazy registered");
+        System.out.println("GoCrazy registered.");
     }
 
     public GoCrazy() {
@@ -222,9 +342,90 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // Edge Cases
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        if (m > n) return "";
+
+        // We map each character to its rightmost position in the pattern using Sunday algorithm logic.
+        // If a character is not in the pattern, we can shift by m + 1.
+        int[] delta = new int[256]; // Using 256 for ASCII, map for full Unicode fallback
+        java.util.Map<Character, Integer> deltaMap = new java.util.HashMap<>();
+
+        // Initialize with default shift m + 1
+        for (int i = 0; i < 256; i++) delta[i] = m + 1;
+
+        for (int i = 0; i < m; i++) {
+            char c = pattern.charAt(i);
+            if (c < 256) {
+                delta[c] = m - i;
+            }
+            deltaMap.put(c, m - i);
+        }
+
+        // KMP Next Table for verification
+        int[] KMPNextTable = new int[m + 1];
+        int i = 0;
+        int j = -1;
+        KMPNextTable[0] = -1;
+
+        while (i < m) {
+            while (j > -1 && pattern.charAt(i) != pattern.charAt(j)) {
+                j = KMPNextTable[j];
+            }
+            i++;
+            j++;
+            if (i < m && pattern.charAt(i) == pattern.charAt(j)) {
+                KMPNextTable[i] = KMPNextTable[j];
+            } else {
+                KMPNextTable[i] = j;
+            }
+        }
+
+        // Search Phase (FJS Logic)
+        int pos = 0;
+        while (pos <= n - m) {
+            // Check the rightmost character of the window first (Sunday's heuristic)
+            // If this doesn't match, we can skip immediately without checking the rest!
+            if (pattern.charAt(m - 1) != text.charAt(pos + m - 1)) {
+
+                if (pos + m >= n) break; // End of text
+
+                char nextChar = text.charAt(pos + m);
+                int shift;
+                if (nextChar < 256) {
+                    shift = delta[nextChar];
+                } else {
+                    shift = deltaMap.getOrDefault(nextChar, m + 1);
+                }
+                pos += shift;
+            } else {
+                // Rightmost character matches. Now verifying the rest using KMP logic.
+                int k = 0;
+                while (k < m - 1 && pattern.charAt(k) == text.charAt(pos + k))  k++;
+
+                if (k == m - 1) {
+                    // Full match found
+                    indices.add(pos);
+                    // Shift using KMP's KMPNextTable table
+                    pos += (j - KMPNextTable[m]);
+                    // Standard KMP shift would be m - KMPNextTable[m], but FJS is slightly different
+                    // For multiple matches, we can just shift by 1 or use KMP logic.
+                    pos += (m - KMPNextTable[m]); // Correct KMP shift
+                } else {
+                    // Mismatch at index k
+                    // Shift using KMP rule relative to the mismatch
+                    pos += (k - KMPNextTable[k]);
+                }
+            }
+        }
+
+        return indicesToString(indices);
     }
 }
-
-
