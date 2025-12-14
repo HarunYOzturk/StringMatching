@@ -249,4 +249,3 @@ public class ManualTest {
         return " ".repeat(padding) + text + " ".repeat(width - text.length() - padding);
     }
 }
-

@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 class Naive extends Solution {
@@ -12,9 +14,22 @@ class Naive extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        List<Integer> indices = new ArrayList<>();
         int n = text.length();
         int m = pattern.length();
+        
+        //return empty for both empty text and pattern > text
+        if (m > n)
+            return "";
+        
+        List<Integer> indices = new ArrayList<>();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        
 
         for (int i = 0; i <= n - m; i++) {
             int j;
@@ -201,10 +216,135 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+
+        
+        int n = text.length();
+        int m = pattern.length();
+        
+        
+        List<Integer> indices = new ArrayList<>();
+        
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        
+        // Pattern can't be longer than text
+        if (m > n)
+            return "";
+
+        // Build both heuristic tables
+        HashMap<Character, Integer> badCharTable = createBadCharTable(pattern);
+        int[] goodSuffixTable = createGoodSuffixTable(pattern);
+
+        for (int i = m - 1; i < text.length();) {
+
+            int iTemp = i;
+            int badShift = 0;
+            int goodShift = 0;
+            // Compare pattern from right to left
+            for (int j = m - 1; j >= 0; j--) {
+                if (text.charAt(iTemp) != pattern.charAt(j)) {
+                    // Mismatch calculate shifts from both tables
+                    goodShift = goodSuffixTable[j + 1];
+
+                    if (badCharTable.containsKey(text.charAt(iTemp))) {
+                        badShift = Math.max(1, j - badCharTable.get(text.charAt(iTemp)));
+                    } else {
+                        badShift = j + 1;
+                    }
+                    // Shift by the maximum of both heuristics
+                    i = i + Math.max(badShift, goodShift);
+                    break;
+
+                } else { // Character matched
+                     
+                    if (j == 0) { // pattern match found at iTemp
+                        indices.add(iTemp);
+                        i += goodSuffixTable[j];
+                        break;
+                    }
+                    iTemp--;
+                }
+            }
+
+        }
+        return indicesToString(indices);
+
+    }
+
+    private int[] createGoodSuffixTable(String pattern) {
+        int m = pattern.length();
+
+        int[] borderPositions = new int[m + 1];
+        int[] shiftTable = new int[m + 1];
+
+        // Case 1: suffix appears at unmatched part of pattern with different preceding char
+        fillTableCaseExactMatch(pattern, shiftTable, borderPositions);
+        // Case 2: matched part of pattern's suffix matches patterns prefixes
+        fillTableCasePrefixSuffix(shiftTable, borderPositions);
+
+        return shiftTable;
+    }
+
+    // Fill shifts for case 1
+    private void fillTableCaseExactMatch(String pattern, int[] shiftTable, int[] borderPositions) {
+        
+        int i = pattern.length();
+        int j = i + 1;
+        int n = i;
+        
+        borderPositions[i] = j;
+        while (i > 0) {
+            // Find border positions
+            while (j <= n && (pattern.charAt(i - 1) != pattern.charAt(j - 1))) {
+                
+                if (shiftTable[j] == 0)
+                    shiftTable[j] = j - i;
+                
+                j = borderPositions[j];
+
+            }
+            i--;
+            j--;
+            borderPositions[i] = j;
+        }
+        
+    }
+    
+    // Fill shifts for case 2
+    private void fillTableCasePrefixSuffix(int[] shiftTable, int[] borderPositions) {
+        
+        int j = borderPositions[0];
+
+        for (int i = 0; i < shiftTable.length; i++) {
+            if (shiftTable[i] == 0)
+                shiftTable[i] = j;
+
+            if (i == j)
+                j = borderPositions[i];
+        }
+        
+    }
+
+    // Bad character table: rightmost occurrence of each character
+    private HashMap<Character, Integer> createBadCharTable(String pattern) {
+        
+        HashMap<Character, Integer> map = new HashMap<>();
+        
+        for (int i = pattern.length() - 1; i >= 0; i--) {
+            
+            if (!map.containsKey(pattern.charAt(i))) {
+                
+                map.put(pattern.charAt(i), i);
+            }
+        }
+        return map;
     }
 }
+
 
 /**
  * TODO: Implement your own creative string matching algorithm
@@ -226,5 +366,3 @@ class GoCrazy extends Solution {
         throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
     }
 }
-
-

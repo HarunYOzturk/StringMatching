@@ -195,7 +195,7 @@ public class PreAnalysisComparison {
                 timeDiffStr = String.format("✗ %.2f", timeDiffUs);
             }
             
-            System.out.printf("%-25s %-12s %12.2f %12.2f %12.2f %-15s %15s%n",
+            System.out.printf("%-25s %-12s %-12.2f %-12.2f %-12.2f %-15s %-15s%n",
                     truncate(result.testCaseName, 23),
                     truncate(result.chosenAlgorithm, 10),
                     analysisTimeUs,
@@ -293,7 +293,7 @@ public class PreAnalysisComparison {
             String chosenAlg = truncate(result.chosenAlgorithm, 13);
             double totalWithPreAnalysis = result.totalTimeWithPreAnalysis / 1000.0;
 
-            System.out.printf("%-32s %-15s %20.2f", testName, chosenAlg, totalWithPreAnalysis);
+            System.out.printf("%-32s %-15s %-20.2f", testName, chosenAlg, totalWithPreAnalysis);
 
             // For each algorithm, show the difference
             for (String alg : allAlgorithms) {
