@@ -1,0 +1,50 @@
+For the first days of the homework, we mostly brainstormed with Sina in the cafeteria. Honestly, both of us had very low grades on the lab exam, so we really wanted to do our best on this homework. To get a satisfactory grade, we started thinking about implementing the optional extra algorithm, GoCrazy.
+
+At first, we talked a lot about what GoCrazy should actually be. We went back and forth quite a bit: should it try to compensate for the weaknesses of the other algorithms, or should it be more like a slightly improved hybrid of common string matching approaches? This phase gave us some freedom to really think about string matching algorithms in general — what they are based on, how they differ, and in which scenarios they actually shine. I think our main idea was to create something simple but effective, especially for specific cases rather than everything.
+
+We then started thinking about what kind of specific cases or "pattern" patterns we could target with GoCrazy. We quickly eliminated long patterns, since those are already handled pretty well by Rabin-Karp. We also considered self-overlapping patterns, where KMP is usually very strong, and at first we honestly thought we could do something more efficient. The test results proved us wrong though, so we had to rethink our GoCrazy design.
+
+When we focused on ABABAB style self overlapping patterns, we noticed something interesting; GoCrazy was somehow performing better in certain test cases, especially long texts with many possible matches, small alphabets with long patterns, patterns containing spaces, and near-match scenarios. Based on these observations, we shifted our focus and re-engineered GoCrazy around those strengths.
+
+After finishing GoCrazy, we split the responsibilities. Sina watched videos and searched online about BoyerMoore, common pitfalls, performance tricks, and its core ideas. He then explained all of this to me, and together we decided how to implement it. We grabbed a coffee and started coding BoyerMoore together. At first, it was pretty hard to implement directly, mainly because it had to fit into the same structure as the other algorithms in Analysis.java.
+
+Within a day, we completed our Boyer-Moore implementation. Along the way, we dealt with many frustrating versions: Boyer-Moore failing 21 tests, then 3 tests, then just 1 test. We kept tweaking it because, strangely enough, it was almost never the best-performing algorithm in any test case. Meanwhile, GoCrazy was giving surprisingly good results in several scenarios.
+
+Overall, implementing GoCrazy and Boyer-Moore was probably the most beneficial part of the homework. This was where we did the most research and thinking. Especially before writing GoCrazy, we had to deeply understand the strengths and weaknesses of each algorithm, which honestly helped a lot since I had already been thinking about these topics while preparing for the lab and midterm.
+
+The original deadline was December 8, and we started quite early, so all the steps above were completed fairly fast. That gave us a bit of a break from this homework. I thought it would be better to shift my focus to other courses and leave this one closer to the deadline. I am taking 11 courses this term, which means a lot of homework and study material. Around this time, I also had 3 other homeworks and 2 additional projects. On top of that, I was preparing for a couple of company interviews. And during the first days of the homework, I was abroad visiting my girlfriend. Since I was physically away from my computer, I had to catch up later by working harder, which honestly never goes well for me, because when I am short on time, my work quality drops a lot. 
+
+As we got closer to the deadline, I asked Sina when we were going to finish the homework. We picked a day, opened our laptops, and worked on the same `Analysis.java` file together. We tried to build a high accuracy preAnalysis class. Very early in that session, we realized that the “best” algorithm wasn’t consistent, it changed from run to run. At first, we thought about modifying the test cases and making them longer, hoping small differences would become more visible. But we quickly realized that changing the text length, pattern length, or content didnt stabilize results; it just changed them.
+
+Instead, we collected many outputs from both of our laptops and sent them to an LLM, using a majority vote to decide the best-performing algorithm for each test case. With this majority vote, we labeled the “best” algorithm per case. Still, problems remained: KMP wasn’t winning KMPadvantegous cases, Boyer-Moore wasn’t winning Boyer-Moore advantageous ones, Naive worst case is best performed by Navie string matching and so on.
+
+At this point, we had to decide whether to use very general rules for preAnalysis (which would lower accuracy) or loosen the conditions and add some specific rules to boost accuracy without completely breaking known string matching stereotypes. I pointed out that accuracy was one of the grading criteria for preAnalysis, so we couldn’t ignore it. I then started working on preAnalysis, with partial help from LLMs. None of them gave a perfectly defined solution, but that actually helped, because it left room for discussion. Sina and I talked through the suggested rules and refined them together. In the end, with our own decisions and LLM assistance, we completed preAnalysis.
+
+After finishing the homework, we commented the code separately. Since our professor is honestly very different from most algorithm instructors, especially with how much emphasis he puts on string matching, we thought it was better to study string matching for the 105th hour. With a string matching lab midterm, 40 points on the midterm exam, and a homework on the topic, it still felt like the quiz on December 12 could also come from string matching.
+
+Honest review:
+Submitting LLM chats is honestly the way forward for homework these days, but most instructors don’t ask for it. In this homework, I think it was a great idea. Through this assignment, I really mastered Boyer-Moore its strengths, weaknesses, and how to implement it wisely. I had studied it before, but this homework is what truly tattooed it into my brain.
+
+The deadline extension felt a bit unnecessary, but I’m not complaining. As a team, we finished the homework pretty quickly; it only took around 3–5 days of light work. I do think the test cases were not very efficient. We had to rely on majority voting just to understand what was actually performing best. The test cases could have been more distinctive without losing their core conditions, maybe by making them longer.
+
+Overall though, I really liked the homework idea, the task itself, and the GitHub-based workflow. The homework was open, well-described, and the expectations were clear, which made the whole experience much more enjoyable.
+
+
+
+
+
+https://algs4.cs.princeton.edu/53substring/BoyerMoore.java.html
+https://www.geeksforgeeks.org/dsa/boyer-moore-algorithm-for-pattern-searching/
+https://www.youtube.com/watch?v=qEczMxXcz9o
+https://claude.ai/share/1b95e331-b1e7-429e-875a-3633c5da2dd8  //main chat
+https://chatgpt.com/share/693aec83-020c-8007-a14c-9ae817b2679c  //chat for cumulative table
+
+https://chatgpt.com/share/693eeb8b-5cd4-8007-b594-158051bbbb05 //chat link that i cleared myjourney text for a better reading experience :)
+
+
+Name: Furkan Öztürk
+Student Number: 23050151018
+
+
+my teammate: sina erdem özdemir
+his no: 21050151019
