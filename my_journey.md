@@ -1,50 +1,48 @@
-# Project Journey: String Matching Algorithms
+# Project Journey: String Matching Algorithms Analysis
 
 ## 1. Introduction
-In this project, our objective was to implement and compare string matching algorithms, specifically Boyer-Moore and our custom design named "GoCrazy". [cite_start]We also aimed to develop a smart Pre-analysis strategy to select the most efficient algorithm dynamically based on the input characteristics[cite: 7].
+In this bonus project, our primary objective was to implement and compare string matching algorithms. specifically focusing on Boyer-Moore and our custom hybrid design named "GoCrazy". Furthermore, we aimed to develop an intelligent Pre-analysis strategy to dynamically select the most efficient algorithm based on the text and pattern characteristics.
 
-## 2. Our Research & Algorithm Design
+## 2. Algorithm Design & Implementation
 
 ### Boyer-Moore Implementation
-We focused on optimizing the standard Boyer-Moore algorithm. [cite_start]Standard versions often use fixed-size arrays which can crash with multi-byte characters, or HashMaps which introduce heavy startup overhead[cite: 10, 11].
-* [cite_start]**Optimization:** We utilized a Collision-Tolerant Array Strategy using a fixed-size `int[256]` array paired with bitwise masking `(char & 0xFF)`[cite: 13, 14].
-* [cite_start]**Result:** This approach removed allocation overhead, significantly cutting startup time while remaining safe for Unicode characters[cite: 15, 16].
+We implemented an optimized version of the Boyer-Moore algorithm. Standard implementations often rely on `int[256]` arrays or HashMaps.
+* **The Problem:** HashMaps introduced heavy startup overhead (~40µs), and standard arrays risked crashing with Unicode/multi-byte characters.
+* **Our Solution:** We adopted a **Collision-Tolerant Array Strategy** using a fixed-size array paired with bitwise masking `(char & 0xFF)`. This minimized startup time while maintaining safety for all character types.
 
 ### The "GoCrazy" Algorithm (Adaptive Horspool++)
-[cite_start]Our custom algorithm, GoCrazy, is a hybrid built around Horspool's skip table with specific performance tweaks[cite: 18].
-* [cite_start]**Mechanism:** It scans right-to-left like Boyer-Moore but focuses on the Bad Character rule to reduce complexity[cite: 22].
-* [cite_start]**Optimization:** It caches the pattern's last character before the loop to avoid repeated lookups and uses a shift logic inspired by Sunday's algorithm[cite: 23, 26].
-* [cite_start]**Use Case:** It proved to be the clear winner for medium-to-large inputs, outperforming Boyer-Moore in tests like "Very Long Text" (8.158 µs vs 12.679 µs)[cite: 60, 61].
+"GoCrazy" is our custom hybrid algorithm designed to balance speed and complexity.
+* **Design:** It is built around Horspool’s skip table but optimized with Sunday’s algorithm concepts. It scans right-to-left but drops the complex Good Suffix rule of Boyer-Moore, focusing instead on the Bad Character rule.
+* **Optimization:** We cache the pattern's last character before the loop and check the last character in the window first. If it doesn't match, we skip ahead immediately.
+* **Performance:** This algorithm proved to be the winner for medium-to-large inputs, significantly outperforming standard Boyer-Moore in "Very Long Text" scenarios.
 
 ### Pre-Analysis Strategy
-[cite_start]Our strategy follows the philosophy that "simple beats clever"[cite: 33].
-* [cite_start]**Naive:** Selected for tiny patterns or short texts (<500 chars) because the overhead of building tables in advanced algorithms is costlier than a simple scan[cite: 36, 54].
-* [cite_start]**KMP:** Triggered for repetitive patterns (e.g., "ABCABC") where the prefix table provides a mathematical advantage[cite: 39, 40].
-* [cite_start]**GoCrazy/Boyer-Moore:** Used for large texts and huge alphabets where the skip-table preparation pays off[cite: 46, 47].
+Our strategy is built on the realization that "simple beats clever" for small inputs.
+* **Naive:** We default to Naive for short texts (<500 chars) or tiny patterns because the overhead of building skip tables outweighs the benefits.
+* **KMP:** Triggered specifically for repetitive patterns (e.g., "ABCABC") where its prefix table offers a mathematical advantage.
+* **GoCrazy:** Selected for large texts and complex alphabets where the preprocessing cost is justified by the speed of skipping.
 
-## 3. The Journey
+## 3. Our Journey
 
 ### Motivation
-Our journey began after a difficult lab exam where many students struggled. [cite_start]To avoid repeating this in the midterm, we decided to deeply study string matching algorithms and implement them from scratch[cite: 338].
+Our motivation started after a challenging Lab Exam where many students, including us, struggled. To ensure we wouldn't face the same difficulty in the upcoming midterm, we decided to implement these algorithms from scratch to fully understand the logic behind them.
 
-### Challenges & Iterations
-* **The HashMap Trap:** Initially, we implemented our GoCrazy algorithm using `HashMap`, `ArrayList`, and `HashSet`. [cite_start]While theoretically correct, we realized this was extremely costly in terms of space and time due to object overhead[cite: 341].
-* **The Pivot:** We refactored the code to use primitive `int[256]` arrays. [cite_start]This change resulted in a massive performance boost, especially on older processors[cite: 342, 69].
+### Challenges and Iterations
+* **The HashMap Mistake:** Initially, we implemented the GoCrazy algorithm using `HashMap`, `ArrayList`, and `HashSet`. While the logic was correct, the performance was poor due to high memory and time costs.
+* **The Optimization:** We refactored the entire code to use primitive `int` arrays and modulo operations. This simple change provided a massive performance boost, especially on standard processors.
 
-### The "Aha!" Moment
-During the Pre-analysis phase, we were confused because the Naive algorithm kept winning in our initial test cases. [cite_start]We thought our analysis was flawed[cite: 345]. After consulting with Mr. Öztürk, we realized we needed to consider a broader range of edge cases (different lengths, patterns) rather than just the provided tests. [cite_start]This feedback allowed us to design a more robust selection strategy[cite: 346, 347].
+### The Turning Point
+During the Pre-analysis phase, we were initially confused because the Naive algorithm kept winning in the provided test cases. We thought our advanced algorithms were broken. However, after consulting with **Mr. Öztürk**, we realized we needed to think beyond the provided test cases and consider edge cases like very long texts or specific alphabets. This feedback was crucial in refining our final selector logic.
 
-## 4. LLM & AI Usage
-We utilized Large Language Models to assist in optimizing our code and strategy:
-* [cite_start]**Gemini 3 Pro:** Used for code refactoring, specifically helping us transition from HashMaps to efficient array structures and analyzing complexity[cite: 343, 352].
-* [cite_start]**Claude Sonnet 4.5:** Assisted in the comparative analysis of search algorithms and helped design the logic for our Pre-analysis technique[cite: 348, 353].
+## 4. LLM & Research Resources
+We utilized AI tools to assist in code refactoring and complexity analysis, ensuring our "journey" text and code comments were clear.
+* **Gemini 3 Pro:** Used for optimizing the `GoCrazy` algorithm and transitioning from HashMaps to arrays.
+* **Claude Sonnet 4.5:** Assisted in designing the Pre-analysis decision tree and comparing theoretical performance vs. actual results.
 
 ## 5. References
-1.  Öztürk, M. and Nar, F. (2025). CENG303 Algorithm Analysis Lecture Contents.
-2.  Google. (2025). Gemini 3 Pro.
-3.  Anthropic. (2025). Claude Sonnet 4.5.
-4.  GeeksforGeeks. (2024). Boyer Moore Algorithm for Pattern Searching.
-5.  Encora Insights. (n.d.). The Boyer-Moore-Horspool Algorithm.
+1. Öztürk, M. and Nar, F. (2025). CENG303 Algorithm Analysis Lecture Contents.
+2. GeeksforGeeks. (2024). Boyer Moore Algorithm for Pattern Searching.
+3. Encora Insights. (n.d.). The Boyer-Moore-Horspool Algorithm.
 
 ---
 **Students:**
