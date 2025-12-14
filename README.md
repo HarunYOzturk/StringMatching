@@ -1,112 +1,300 @@
-Bonus Homework Report: String Matching Algorithms
+# String Matching Algorithms - Homework Assignment
 
-Authors:
+## Overview
+This homework assignment focuses on implementing and analyzing string matching algorithms. You will implement two algorithms and create a pre-analysis system to intelligently choose the best algorithm for different scenarios.
 
-    Zeki Furkan Yıldız (21050111019)
+Test cases are loaded from JSON files, making it easy to add, modify, and share test cases.
 
-    Sudenur Akdoğan (2350111017)
+## Project Structure
 
-1. Introduction
+```
+StringMatching/
+├── src/
+│   ├── Solution.java              - Base class for all algorithms
+│   ├── Analysis.java              - Contains all algorithm implementations
+│   ├── PreAnalysis.java           - Pre-analysis interface and implementations
+│   ├── TestCase.java              - Test case data structure
+│   ├── TestCaseLoader.java        - Loads test cases from JSON files
+│   ├── TestRunner.java            - Test execution and comparison
+│   ├── PreAnalysisComparison.java - Pre-analysis performance comparison
+│   ├── ManualTest.java            - Main program entry point
+│   └── ManualTestRunner.java      - Detailed test execution with timing
+├── testcases/
+│   ├── shared/                    - Test cases for students (JSON files)
+│   │   ├── 01_simple_match.json
+│   │   ├── 02_no_match.json
+│   │   └── ... (10 test files)
+│   └── hidden/                    - Test cases for grading (JSON files)
+│       ├── 11_case_sensitive.json
+│       └── ... (5 test files)
+├── run.sh                         - Quick run script
+└── test.sh                        - Main test runner script
+```
 
-In this homework, we worked on string matching algorithms. The main goal was to implement the Boyer-Moore algorithm and create a custom algorithm called "GoCrazy". We also wrote a Pre-Analysis class to choose the best algorithm automatically. We realized that theoretical speed is not always the same as real-world speed because of Java's overhead costs.
-2. Boyer-Moore Implementation
+## Your Tasks
 
-We implemented the Boyer-Moore algorithm in the Analysis.java file. We focused on the Bad Character Heuristic.
+### Task 1: Implement Boyer-Moore Algorithm (Required)
+**File:** `src/Analysis.java` - Class `BoyerMoore`
 
-For the implementation, we used an integer array of size 256 for ASCII characters. One important optimization we added is the Threshold Check. We found that creating the badChar array takes time. If the pattern is very short (less than 20 characters), it is faster to just use the Naive algorithm.
-Resources Used
+Implement the Boyer-Moore string matching algorithm. This algorithm is known for its efficiency, especially with large alphabets.
 
-To understand the Boyer-Moore logic and the Bad Character rule, we used these websites:
+**Key concepts:**
+- Bad character rule
+- Good suffix rule
+- Preprocessing phase
 
-    https://www.tutorialspoint.com/data_structures_algorithms/boyer_moore_algorithm.htm
+**Current status:** Throws `UnsupportedOperationException`
 
-    https://www.geeksforgeeks.org/dsa/boyer-moore-algorithm-for-pattern-searching/
+### Task 2: Implement Your Own Algorithm (Not Required)
+**File:** `src/Analysis.java` - Class `GoCrazy`
 
-We also checked this GitHub repository to understand the code structure:
+Create your own string matching algorithm! Be creative and try to optimize for specific cases.
 
-    https://github.com/likejazz/boyer-moore-string-search
+**Ideas:**
+- Combine multiple algorithms
+- Optimize for specific pattern characteristics
+- Use heuristics to skip unnecessary comparisons
 
-3. GoCrazy Algorithm
+**Current status:** Throws `UnsupportedOperationException`
 
-For the creative part, we wanted to implement something faster than standard Boyer-Moore. We decided to use a hybrid approach based on Sunday's Algorithm and FJS (Fast-Jesus-Sunday).
+### Task 3: Implement Pre-Analysis Logic (Required)
+**File:** `src/PreAnalysis.java` - Class `StudentPreAnalysis`
 
-The logic is simple: When a mismatch occurs, instead of looking at the character in the pattern, Sunday's algorithm looks at the character in the text immediately after the current window. This allows for larger jumps.
+Implement the `chooseAlgorithm()` method to analyze the text and pattern, then choose the best algorithm.
 
-We also combined this with KMP logic to be safe against repetitive patterns.
-Resources Used
+**Goal:** Maximize the number of times you choose the fastest algorithm!
 
-We researched hybrid algorithms on GitHub and adapted the logic from these repositories:
+**Considerations:**
+- Pattern length
+- Text length
+- Pattern characteristics (repeating characters, etc.)
+- Alphabet size
+- Algorithm time complexities
 
-    https://github.com/johannburkard/StringSearch (For Sunday's Algorithm logic)
+**Current status:** Returns `null` (no algorithm selection)
 
-    https://github.com/CGJennings/fjs-string-matching (For FJS/KMP hybrid logic)
+## Already Implemented Algorithms
 
-4. Pre-Analysis Logic
+The following algorithms are already implemented for reference:
 
-This was the most critical and complex part of the assignment. When we looked at the initial console output, we saw that the Naive algorithm was winning almost all standard test cases. We realized that for modern Java, "simple is faster" until the data gets really big or complex.
-Why Naive Wins?
+1. **Naive Algorithm** - Simple brute force approach
+   - Time Complexity: O(n*m)
+   - Good for: Short patterns, small texts
 
-We analyzed the results and identified two main reasons:
+2. **KMP (Knuth-Morris-Pratt)** - Uses failure function
+   - Time Complexity: O(n+m)
+   - Good for: Patterns with repeating prefixes
 
-    Overhead: Creating lookup tables (like HashMap or int[256]) takes microseconds. For a test that only lasts 1-2 microseconds, this setup cost is huge.
+3. **Rabin-Karp** - Uses rolling hash
+   - Time Complexity: O(n+m) average, O(n*m) worst case
+   - Good for: Multiple pattern matching, long patterns
 
-    JIT Optimization: The Java Virtual Machine (JVM) optimizes simple loops (like Naive) extremely well, making them faster than complex logic for small inputs.
+## How to Run
 
-Our Strategy
+### Quick Start:
+```bash
+# Run all tests with full comparison tables
+./run.sh
 
-Based on our findings, we wrote a highly detailed StudentPreAnalysis class with specific layers of logic:
+# Or use test.sh directly
+./test.sh
+```
 
-    Instant Edge Cases: If the pattern is empty or longer than the text, return "Naive" immediately.
+### Run Specific Tests:
+```bash
+# Run specific test indices
+./test.sh 0 1 2
 
-    Ultra Short Patterns (M≤3): The analysis overhead is greater than the search time itself. We force Naive.
+# Run a range of tests
+./test.sh 0-5
 
-    Repetitive Patterns: We implemented a helper method (hasHighRepetition) that checks the first 8 characters. If the pattern repeats (e.g., "AAAA"), we switch to KMP to avoid the worst-case O(N⋅M) behavior of Naive.
+# Run only shared tests (for students)
+./test.sh share
 
-    Small Text Optimization (N<128): This was our critical threshold. If the text is shorter than 128 characters, the overhead of building heuristic tables outweighs the speedup. We force Naive here.
+# Run only hidden tests (for grading)
+./test.sh hidden
 
-    Large Texts (N>512):
+# List all available tests
+./test.sh list
 
-        DNA Detection: We implemented a fast bitmask check (isSmallAlphabet). If the text uses a small alphabet (like A, C, G, T), simple skipping algorithms often fail due to high collision rates. In this case, we prefer KMP for stability.
+# Run with pre-analysis comparison
+./test.sh preanalysis
+```
 
-        Long Patterns (M>30): For very long patterns, Boyer-Moore's "Good Suffix" rule allows for massive jumps.
+### Manual Compilation and Run:
+```bash
+# Compile all files
+javac src/*.java
 
-    The "Sweet Spot" (GoCrazy): For everything else (standard text, medium patterns), we default to GoCrazy (Sunday's algorithm) as its aggressive skipping strategy proved fastest in our benchmarks.
+# Run from src directory
+cd src
+java ManualTest [arguments]
+```
 
-5. Analysis of Results
+## Output
 
-Looking at our final detailed test results, our strategy proved successful in identifying the "winners" for different scenarios:
+The program generates multiple comparison tables:
 
-    Overall Accuracy: Our logic correctly predicted the fastest algorithm in 20 out of 30 test cases (66.7%), which is a significant improvement over a single static choice.
+### Table 1: Detailed Test Results - Execution Time Comparison
+Shows execution time for each algorithm on each test:
+- **Test Case** - Name of the test
+- **Algorithm columns** - Status and execution time in microseconds (μs)
+- **✓ PASS** - Algorithm solved the test correctly
+- **✗ FAIL** - Algorithm produced incorrect output
+- **✗ ERROR** - Algorithm threw an exception
+- **N/A** - Algorithm not implemented
 
-    Very Long Text
+### Table 2: Summary Statistics
+Shows aggregate statistics for each algorithm:
+- **Passed/Failed** - Number of tests passed and failed
+- **Not Implemented** - Number of tests where algorithm is not implemented
+- **Avg/Min/Max** - Average, minimum, and maximum execution times
 
-        Naive Time: 34.98μs
+### Table 3: Fastest Algorithm Comparison
+Shows which algorithm was fastest for each test case
 
-        GoCrazy Time: 21.03μs (Note: Chosen algorithm overhead led to slightly different total times, but the raw speed advantage is clear). Our strategy successfully switched away from Naive for this massive input.
+### Table 4: Algorithm Comparison Table
+Shows which algorithms successfully solved each test case (Pass/Fail/N/A)
 
-    Repetitive Patterns: In the "Simple Match" test case, our logic detected repetition and chose KMP (9.68μs). Although Naive was technically faster due to low overhead, KMP provided the necessary safety guarantee against worst-case scenarios.
+### Table 5: Pre-Analysis Performance Comparison (when using `preanalysis` mode)
+Shows the performance of your pre-analysis system:
+- **Analysis(μs)** - Time spent in pre-analysis
+- **Exec(μs)** - Time spent executing chosen algorithm
+- **Total(μs)** - Total time (Analysis + Execution)
+- **Fastest Alg** - The actually fastest algorithm
+- **Time Diff(μs)** - Time saved (positive) or lost (negative)
+- **✓** - Pre-analysis chose the fastest algorithm
+- **✗** - Pre-analysis did NOT choose the fastest
 
-    Pattern Longer Than Text: Our strategy correctly identified this edge case and instantly chose Naive, resulting in a lightning-fast execution of 0.47μs.
+## Test Cases
 
-6. Our Journey
+Test cases are stored as JSON files in the `testcases/` directory.
 
-This homework was interesting because it showed us that Big-O notation is not everything. Theoretically, Boyer-Moore is O(N/M), which should be fast. But in reality, for small strings, the initialization cost makes it slower than the O(N⋅M) Naive algorithm.
+### Shared Tests (testcases/shared/)
+These tests are shared with students for development and debugging:
+1. Simple Match
+2. No Match
+3. Single Character
+4. Pattern at End
+5. Pattern at Beginning
+6. Overlapping Patterns
+7. Long Text Multiple Matches
+8. Pattern Longer Than Text
+9. Entire Text Match
+10. Repeating Pattern
 
-We spent a lot of time debugging because we thought our Boyer-Moore code was wrong. Later we realized it was just the overhead cost. Researching different repositories (like FJS and Sunday) helped us write a much better GoCrazy algorithm.
+### Hidden Tests (testcases/hidden/)
+These tests are kept hidden for instructor grading:
+11. Case Sensitive
+12. Numbers and Special Characters
 
-Thanks to this homework, we painfully learned that optimization does not lie solely in theoretical formulas, but also in knowing where and when to defeat that microsecond startup cost. Lastly, we understood that the best algorithm is not always the most complex, but the one most suitable for the current workload.
-AI Utilization & Methodology
+### JSON Test Case Format
+Each test case is a JSON file with the following structure:
+```json
+{
+  "name": "Test Name",
+  "text": "The text to search in",
+  "pattern": "pattern",
+  "expected": "0,5,10"
+}
+```
 
-During the development of the strategy, comparative analysis, and debugging complex overhead issues, we utilized AI assistants (specifically Gemini) to quickly analyze console output and evaluate performance trade-offs.
+### Adding New Test Cases
+To add a new test case:
+1. Create a new JSON file in `testcases/shared/` or `testcases/hidden/`
+2. Follow the naming convention: `##_test_name.json`
+3. Fill in the name, text, pattern, and expected result
+4. The system will automatically load it on next run
 
-To ensure transparency regarding our code generation and optimization process, we guided the AI using specific technical resources we found online. Below are the exact prompts we used to refine our algorithms:
+## Grading Criteria
 
-    For the GoCrazy Algorithm (Sunday/FJS Logic):
+1. **Boyer-Moore Implementation (30%)**
+   - Correctness: Passes all test cases
+   - Efficiency: Proper implementation of bad character rule
+   - Code quality: Clean, well-commented code
 
-        _"I found these resources online: https://github.com/johannburkard/StringSearch, https://github.com/CGJennings/fjs-string-matching. Can you update the GoCrazy algorithm using the logic of these algorithms? We will cite them as references. Please provide renewed, efficient Java code that looks unique and original, not generic code."_
+2. **Your Research (30%)**
+   - Documentation: Document how you used the internet or LLMs to create your strategy, and share all resources you used
+   - Transparency: Be honest about your research process and sources
 
-    For Boyer-Moore Optimization:
+3. **Pre-Analysis Implementation (30%)**
+   - Accuracy: Percentage of times fastest algorithm is chosen
+   - Efficiency: Pre-analysis overhead is minimal
+   - Logic: Well-reasoned algorithm selection strategy
+   - Documentation: Clear explanation of strategy
 
-        _"https://www.tutorialspoint.com/data_structures_algorithms/boyer_moore_algorithm.htm, https://www.geeksforgeeks.org/dsa/boyer-moore-algorithm-for-pattern-searching/, https://github.com/likejazz/boyer-moore-string-search. How can we make Boyer-Moore more efficient suitable for the instructor's requirements, influenced by these sites? Give me original code, only change the Boyer-Moore part."_
+4. **Your Journey (10%) - MANDATORY**
+   - **⚠️ IMPORTANT: This section is MANDATORY. Without it, your homework will NOT be graded.**
+   - Be honest and share your experience - there are no wrong answers here
+   - Tell us what you learned, what challenges you faced, or anything you want to share
+   - Examples of what you can write:
+     - "I learned X and Y, and found Z challenging"
+     - "I only had 30 minutes because my dog died"
+     - "I couldn't finish because of [reason], but I learned [something]"
+     - "This homework was [your honest opinion]"
+   - Feedback: Any constructive comments about the homework assignment are welcome
 
-These prompts helped us combine theoretical knowledge from tutorials with practical implementation details, allowing us to write efficient code while maintaining academic integrity by referencing our sources.
+## Tips
+
+### For Boyer-Moore:
+- Start with the bad character rule
+- Test with simple cases first
+- Handle edge cases (pattern longer than text, empty pattern)
+
+### For GoCrazy:
+- Study the existing algorithms
+- Think about their strengths and weaknesses
+- Consider hybrid approaches
+
+### For Pre-Analysis:
+- Look at the `ExamplePreAnalysis` class for inspiration
+- Analyze the test results to understand algorithm performance
+- Consider multiple factors, not just pattern length
+- Balance accuracy with analysis overhead
+
+## Example Pre-Analysis Strategy
+
+```java
+@Override
+public String chooseAlgorithm(String text, String pattern) {
+    int textLen = text.length();
+    int patternLen = pattern.length();
+    
+    if (patternLen <= 3) {
+        return "Naive"; // Fast for very short patterns
+    } else if (hasRepeatingPrefix(pattern)) {
+        return "KMP"; // Good for patterns with repeating prefixes
+    } else if (patternLen > 10 && textLen > 1000) {
+        return "RabinKarp"; // Good for long patterns in long texts
+    } else {
+        return "BoyerMoore"; // Generally efficient
+    }
+}
+```
+
+## Submission
+
+Submit the following files:
+1. `Analysis.java` - With your Boyer-Moore and GoCrazy implementations
+2. `PreAnalysis.java` - With your StudentPreAnalysis implementation
+3. A brief report (PDF) explaining:
+   - Your Boyer-Moore implementation approach
+   - Your GoCrazy algorithm design and rationale
+   - Your pre-analysis strategy and why you chose it
+   - Analysis of your results
+
+## Resources
+
+- [Boyer-Moore Algorithm](https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm)
+- [String Matching Algorithms Overview](https://www.geeksforgeeks.org/algorithms-gq/pattern-searching/)
+- Course lecture notes on string matching
+
+## Questions?
+
+Contact your instructor or TA for help!
+Harun Yahya Öztürk
+harunyahozturk@gmail.com (Mail's should be sent via subject of 'String Matching')
+05413763007
+
+Good luck! 🚀
+
