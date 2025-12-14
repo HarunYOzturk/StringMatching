@@ -1,63 +1,159 @@
-/**
- * PreAnalysis interface for students to implement their algorithm selection logic
- * 
- * Students should analyze the characteristics of the text and pattern to determine
- * which algorithm would be most efficient for the given input.
- * 
- * The system will automatically use this analysis if the chooseAlgorithm method
- * returns a non-null value.
- */
 public abstract class PreAnalysis {
-    
-    /**
-     * Analyze the text and pattern to choose the best algorithm
-     * 
-     * @param text The text to search in
-     * @param pattern The pattern to search for
-     * @return The name of the algorithm to use (e.g., "Naive", "KMP", "RabinKarp", "BoyerMoore", "GoCrazy")
-     *         Return null if you want to skip pre-analysis and run all algorithms
-     * 
-     * Tips for students:
-     * - Consider the length of the text and pattern
-     * - Consider the characteristics of the pattern (repeating characters, etc.)
-     * - Consider the alphabet size
-     * - Think about which algorithm performs best in different scenarios
-     */
     public abstract String chooseAlgorithm(String text, String pattern);
     
-    /**
-     * Get a description of your analysis strategy
-     * This will be displayed in the output
-     */
     public abstract String getStrategyDescription();
 }
 
 
 /**
- * Default implementation that students should modify
- * This is where students write their pre-analysis logic
+ * Strategy Overview:
+ * Decision tree:
+ * 
+ * 1. Pattern Length: Very short patterns use Naive algorithm
+ * 
+ * 2. Pattern Repetition: Uses LPS (Longest Proper Prefix which is also Suffix) to detect
+ *    internal repetition. High repetition ratio indicates KMP is optimal.
+ * 
+ * 3. Character Diversity: Calculates distinct character ratio in pattern. High difference
+ *    favors Boyer-Moore algorithm. (Good skip chances)
+ * 
+ * 4. Text Entropy: Analyzes text entropy using Shannon entropy formula. High entropy
+ *    indicates low repetition, favoring Rabin-Karp. Low entropy indicates
+ *    high repetition, favoring KMP.
  */
 class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
+        int m = pattern.length();
         
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        if (m <= 4)
+            return "Naive";
+        
+        
+        // IF pattern is highly repetitive, use KMP
+        int[] lps = computeLPS(pattern);
+        if (m > 0 && lps[m - 1] > 0) {
+            double repetitionRatio = (double) lps[m - 1] / m;
+            if (repetitionRatio >= 0.5)
+                return "KMP";
+            
+        }
+        
+        // If pattern character diversity is high, use BoyerMoore
+        int distinct = countDistinctChars(pattern);
+        double diversityRatio = (double) distinct / m;
+        if (diversityRatio > 0.6) {
+            return "BoyerMoore";
+        }
+        
+        // If text entropy is high, use RabinKarp
+        double textEntropy = calculateEntropy(text);
+        if (textEntropy > 3.5)
+            return "RabinKarp";
+        else
+            return "KMP";
+    }
+    
+    // Compute LPS (Longest Proper Prefix) array
+    private int[] computeLPS(String pattern) {
+        int m = pattern.length();
+        if (m == 0) return new int[0];
+        
+        int[] lps = new int[m];
+        int len = 0;
+        int i = 1;
+        
+        lps[0] = 0;
+        
+        while (i < m) {
+            if (pattern.charAt(i) == pattern.charAt(len)) {
+                len++;
+                lps[i] = len;
+                i++;
+            } else {
+                if (len != 0) {
+                    len = lps[len - 1];
+                } else {
+                    lps[i] = 0;
+                    i++;
+                }
+            }
+        }
+        
+        return lps;
+    }
+    
+    private int countDistinctChars(String pattern) {
+        if (pattern.length() == 0) return 0;
+        
+        // Find max char value for array size
+        int maxChar = 0;
+        for (int i = 0; i < pattern.length(); i++) {
+            int charVal = (int) pattern.charAt(i);
+            if (charVal > maxChar) {
+                maxChar = charVal;
+            }
+        }
+        
+        // Use boolean array to track seen characters
+        boolean[] seen = new boolean[maxChar + 1];
+        int distinct = 0;
+        
+        for (int i = 0; i < pattern.length(); i++) {
+            int charVal = (int) pattern.charAt(i);
+            if (!seen[charVal]) {
+                seen[charVal] = true;
+                distinct++;
+            }
+        }
+        
+        return distinct;
+    }
+    
+    private double calculateEntropy(String text) {
+        if (text.length() == 0) return 0.0;
+        
+        // Use sample for long texts to keep analysis fast
+        String sample;
+        int sampleSize = 1000;
+        if (text.length() > sampleSize) {
+            sample = text.substring(0, sampleSize);
+        } else {
+            sample = text;
+        }
+        
+        // Count character frequencies
+        int maxChar = 0;
+        for (int i = 0; i < sample.length(); i++) {
+            int charVal = (int) sample.charAt(i);
+            if (charVal > maxChar) {
+                maxChar = charVal;
+            }
+        }
+        
+        int[] freq = new int[maxChar + 1];
+        for (int i = 0; i < sample.length(); i++) {
+            freq[(int) sample.charAt(i)]++;
+        }
+        
+        // Calculate entropy: H = -Σ(p(x) * log2(p(x)))
+        double entropy = 0.0;
+        int n = sample.length();
+        
+        for (int i = 0; i <= maxChar; i++) {
+            if (freq[i] > 0) {
+                double probability = (double) freq[i] / n;
+                entropy -= probability * (Math.log(probability) / Math.log(2.0));
+            }
+        }
+        
+        return entropy;
     }
     
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Student Algorithm Selector: Selects based on pattern length, repetition ratio, diversity, and text entropy";
     }
 }
 
@@ -121,3 +217,5 @@ class InstructorPreAnalysis extends PreAnalysis {
         return "Instructor's testing implementation";
     }
 }
+
+
