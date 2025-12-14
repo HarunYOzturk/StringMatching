@@ -186,45 +186,191 @@ class RabinKarp extends Solution {
     }
 }
 
-/**
- * TODO: Implement Boyer-Moore algorithm
- * This is a homework assignment for students
- */
+
 class BoyerMoore extends Solution {
-    static {
-        SUBCLASSES.add(BoyerMoore.class);
-        System.out.println("BoyerMoore registered");
+  static {
+    SUBCLASSES.add(BoyerMoore.class);
+    System.out.println("BoyerMoore registered");
+  }
+
+  // Stamping trick to avoid O(65536) initialization each call
+  private static final int ALPHABET = 65536;
+  private static final int[] lastPos = new int[ALPHABET];
+  private static final int[] stamp = new int[ALPHABET];
+  private static int currentStamp = 1;
+
+  public BoyerMoore() {
+  }
+
+  @Override
+  public String Solve(String text, String pattern) {
+    List<Integer> indices = new ArrayList<>();
+    int n = text.length();
+    int m = pattern.length();
+
+    // Empty pattern matches at every position (consistent with your other
+    // algorithms)
+    if (m == 0) {
+      for (int i = 0; i <= n; i++)
+        indices.add(i);
+      return indicesToString(indices);
+    }
+    if (m > n)
+      return "";
+
+    // Preprocess: record last occurrence in pattern for chars that appear
+    int myStamp = nextStamp();
+    for (int i = 0; i < m; i++) {
+      char c = pattern.charAt(i);
+      stamp[c] = myStamp;
+      lastPos[c] = i;
     }
 
-    public BoyerMoore() {
+    int shift = 0;
+    while (shift <= n - m) {
+      int j = m - 1;
+
+      while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
+        j--;
+      }
+
+      if (j < 0) {
+        indices.add(shift);
+
+        // Standard BM bad-character shift after a match
+        if (shift + m < n) {
+          char next = text.charAt(shift + m);
+          int last = (stamp[next] == myStamp) ? lastPos[next] : -1;
+          shift += m - last;
+        } else {
+          shift += 1;
+        }
+      } else {
+        char bad = text.charAt(shift + j);
+        int last = (stamp[bad] == myStamp) ? lastPos[bad] : -1;
+        shift += Math.max(1, j - last);
+      }
     }
 
-    @Override
-    public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+    return indicesToString(indices);
+  }
+
+  private static int nextStamp() {
+    // Avoid stamp overflow issues (extremely unlikely here, but safe)
+    if (currentStamp == Integer.MAX_VALUE) {
+      // reset stamps to 0
+      for (int i = 0; i < ALPHABET; i++)
+        stamp[i] = 0;
+      currentStamp = 1;
     }
+    return currentStamp++;
+  }
 }
 
-/**
- * TODO: Implement your own creative string matching algorithm
- * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
- */
 class GoCrazy extends Solution {
-    static {
-        SUBCLASSES.add(GoCrazy.class);
-        System.out.println("GoCrazy registered");
+  static {
+    SUBCLASSES.add(GoCrazy.class);
+    System.out.println("GoCrazy registered");
+  }
+
+  public GoCrazy() {
+  }
+
+  @Override
+  public String Solve(String text, String pattern) {
+    List<Integer> indices = new ArrayList<>();
+    int n = text.length();
+    int m = pattern.length();
+
+    if (m == 0) {
+      for (int i = 0; i <= n; i++)
+        indices.add(i);
+      return indicesToString(indices);
+    }
+    if (m > n)
+      return "";
+
+    // -------------------------------------------------------
+    // "Sparse Bad Character" Heuristic
+    // -------------------------------------------------------
+    // We only track the LAST position of the LAST 4 unique characters.
+    // This gives us skips for the most likely mismatch scenarios
+    // without the overhead of a full array or HashMap.
+
+    char c1 = 0, c2 = 0, c3 = 0, c4 = 0;
+    int p1 = -1, p2 = -1, p3 = -1, p4 = -1;
+    int trackedCount = 0;
+
+    // Scan BACKWARDS to find the rightmost unique characters
+    for (int i = m - 1; i >= 0; i--) {
+      char c = pattern.charAt(i);
+      // Check if we already tracked this char
+      if (trackedCount > 0 && c == c1)
+        continue;
+      if (trackedCount > 1 && c == c2)
+        continue;
+      if (trackedCount > 2 && c == c3)
+        continue;
+      if (trackedCount > 3 && c == c4)
+        continue;
+
+      // Add new unique char
+      if (trackedCount == 0) {
+        c1 = c;
+        p1 = i;
+      } else if (trackedCount == 1) {
+        c2 = c;
+        p2 = i;
+      } else if (trackedCount == 2) {
+        c3 = c;
+        p3 = i;
+      } else if (trackedCount == 3) {
+        c4 = c;
+        p4 = i;
+      }
+
+      trackedCount++;
+      if (trackedCount >= 4)
+        break;
     }
 
-    public GoCrazy() {
+    int shift = 0;
+    while (shift <= n - m) {
+      int j = m - 1;
+
+      // Standard right-to-left scan
+      while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
+        j--;
+      }
+
+      if (j < 0) {
+        indices.add(shift);
+        shift++; // Safe shift after match
+      } else {
+        char badChar = text.charAt(shift + j);
+        int lastPos = -1;
+
+        // Check our sparse table
+        if (trackedCount > 0 && badChar == c1)
+          lastPos = p1;
+        else if (trackedCount > 1 && badChar == c2)
+          lastPos = p2;
+        else if (trackedCount > 2 && badChar == c3)
+          lastPos = p3;
+        else if (trackedCount > 3 && badChar == c4)
+          lastPos = p4;
+
+        if (lastPos != -1) {
+          // Known character: use Boyer-Moore skip
+          shift += Math.max(1, j - lastPos);
+        } else {
+          // Unknown character: MUST shift by 1 to be safe
+          // (It might be in the pattern, just not tracked)
+          shift++;
+        }
+      }
     }
 
-    @Override
-    public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
-    }
+    return indicesToString(indices);
+  }
 }
-
-
