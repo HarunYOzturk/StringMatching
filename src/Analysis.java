@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 
 class Naive extends Solution {
     static {
@@ -191,19 +192,73 @@ class RabinKarp extends Solution {
  * This is a homework assignment for students
  */
 class BoyerMoore extends Solution {
+
     static {
         SUBCLASSES.add(BoyerMoore.class);
         System.out.println("BoyerMoore registered");
     }
+    private int[] badChar = new int[65536];
 
     public BoyerMoore() {
     }
 
+
     @Override
     public String Solve(String text, String pattern) {
         // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // first case if the pattern is empty
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        // Second case prepare the Bad character table
+        Arrays.fill(badChar, -1);
+        for (int i = 0; i < m; i++) {
+            char c = pattern.charAt(i);
+            // only take the ones that fit into the UNICODE table
+            if (c < 65536) {
+                badChar[c] = i;
+            }
+        }
+        // amount of shift
+        int s = 0;
+
+        while (s <= (n - m)) {
+            int j = m - 1;
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+            if (j < 0) {
+                // match found
+                indices.add(s);
+                // determine the next shift amount
+                if (s + m < n) {
+                    char nextChar = text.charAt(s + m);
+                    int lastOccur = (nextChar < 65536) ? badChar[nextChar] : -1;
+                    s += m - lastOccur;
+                } else {
+                    s += 1;
+                }
+            } else {
+                // missmatch
+                // Shift the bad character in the text to its last position in the pattern
+                char missMatchedChar = text.charAt(s + j);
+                int lastOccur = (missMatchedChar < 65536) ? badChar[missMatchedChar] : -1;
+
+                // for going back
+                s += Math.max(1, j - lastOccur);
+            }
+        }
+
+        return indicesToString(indices);
     }
+    
 }
 
 /**
@@ -212,6 +267,7 @@ class BoyerMoore extends Solution {
  * Be creative! Try to make it efficient for specific cases
  */
 class GoCrazy extends Solution {
+
     static {
         SUBCLASSES.add(GoCrazy.class);
         System.out.println("GoCrazy registered");
@@ -222,8 +278,85 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // If the pattern is empty every character is a match
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        // If the pattern length is longer than text length that means no match
+        if (m > n) {
+            return "";
+        }
+
+        // Prepare the shifting table for jumping
+        // Primitive int is faster than HashMap
+        int[] shift = new int[256];
+
+        // default jump emount: pattern + 1
+        for (int i = 0; i < 256; i++) {
+            shift[i] = m + 1;
+        }
+
+        // Adjust the jump margins according to the characters within the pattern
+        for (int i = 0; i < m; i++) {
+            char c = pattern.charAt(i);
+            if (c < 256) {
+                shift[c] = m - i;
+            }
+        }
+
+        // 3. End points control
+        char firstP = pattern.charAt(0);
+        char lastP = pattern.charAt(m - 1);
+
+        // 4. Search Loop
+        int s = 0;
+        while (s <= n - m) {
+
+            // --- Hybrit part ---
+            // Checking the end points before middle part (O(1))
+            // This works as Light Hash
+            char firstT = text.charAt(s);
+            char lastT = text.charAt(s + m - 1);
+
+            boolean potentialMatch = (firstT == firstP) && (lastT == lastP);
+
+            if (potentialMatch) {
+                // End points matched chechk the middle (Expensive Check)
+                int j = 1;
+                while (j < m - 1 && text.charAt(s + j) == pattern.charAt(j)) {
+                    j++;
+                }
+
+                // ıf the loop is completed or the pattern is shorter than 2
+                if (j >= m - 1) {
+                    indices.add(s);
+                }
+            }
+
+            // --- Jumping Mechanism ---
+            if (s + m < n) {
+                char nextChar = text.charAt(s + m); // The character out of window
+
+                // Adjust the jumping amount
+                if (nextChar < 256) {
+                    s += shift[nextChar];
+                } else {
+                    // The default jump if Unicode encountered
+                    s += 1;
+                }
+            } else {
+                break;
+            }
+        }
+
+        return indicesToString(indices);
     }
 }
 

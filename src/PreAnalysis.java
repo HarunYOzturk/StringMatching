@@ -38,26 +38,82 @@ public abstract class PreAnalysis {
  * This is where students write their pre-analysis logic
  */
 class StudentPreAnalysis extends PreAnalysis {
+    // TODO: Students should implement their analysis logic here
+    // 
+    // Example considerations:
+    // - If pattern is very short, Naive might be fastest
+    // - If pattern has repeating prefixes, KMP is good
+    // - If pattern is long and text is very long, RabinKarp might be good
+    // - If alphabet is small, Boyer-Moore can be very efficient
+    //
+    // For now, this returns null which means "run all algorithms"
+    // Students should replace this with their logic
+    
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        // 1. If both pattern and text is empty or pattern length is bigger than text length
+        if (m == 0 || n == 0) return "Naive";
+        if (m > n) return "Naive"; 
+
+        // 2. UNICODE control
+        // If there is a Turkish character 
+        if (hasUnicode(pattern)) {
+            return "Naive";
+        }
+
+        // 3. Repetition control (KMP dedector)
+        // Even if the pattern is short but contains repeat naive is slow
+        // Because of that checking it before "m < 20"
+        if (isRepetitive(pattern)) {
+            return "KMP";
+        }
+
+        // 4. long or average sized length
+        // If the length is long the GoCrazy works better
+        if (n > 500) {
+            return "GoCrazy"; 
+        }
+
+        // 5. short pattern use naive
+        // Because its not efficient to create a table
+        if (m < 20) {
+            return "Naive";
+        }
+
+        // 6. DEFAULT
+        // Using Gocrazy becasue it works more stable than BoyerMoore because of guard mechanism
+        return "GoCrazy"; 
     }
     
+    // Unicode control
+    private boolean hasUnicode(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) > 255) return true;
+        }
+        return false;
+    }
+
+    // Repetition control
+    // Looks for the first 5 character
+    private boolean isRepetitive(String p) {
+        int checkLen = Math.min(p.length(), 5);
+        if (checkLen < 2) return false;
+        
+        char first = p.charAt(0);
+        // Checks if the first letter repeats in the next indexes
+        for (int i = 1; i < checkLen; i++) {
+            if (p.charAt(i) == first) return true;
+        }
+        return false;
+    }
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Smart Hybrid: Prioritizes GoCrazy (Sunday) for most cases, detects repetitive patterns for KMP.";
     }
 }
 

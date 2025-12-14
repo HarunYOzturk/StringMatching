@@ -1,0 +1,48 @@
+# My Journey: String Matching Project
+
+## 1. Boyer-Moore Implementation Approach
+In my implementation of the Boyer-Moore algorithm, I focused primarily on the **Bad Character Heuristic**, as it offers the most significant performance boost with a relatively cleaner implementation compared to the Good Suffix rule.
+
+* **Bad Character Table:** I used a `badChar` array of size **65536** to fully support Unicode characters. This array pre-computes the last occurrence index of each character in the pattern. If a character is not found, it stores `-1`.
+* **Right-to-Left Scanning:** The core of my loop scans the pattern from right (`m-1`) to left (`0`). This reverse scanning is crucial because it allows us to maximize the shift distance when a mismatch occurs near the end of the pattern.
+* **Shift Logic:** When a mismatch occurs at index `j` of the pattern with a character `c` in the text:
+    * I calculate the shift as `j - badChar[c]`.
+    * To prevent negative shifts (in cases where the bad character appears to the right of the current mismatch), I used `Math.max(1, ...)` to ensure we always move forward.
+* **Optimization:** Upon finding a full match, instead of shifting by just 1, I implemented a logic similar to the Sunday algorithm (checking `text[s+m]`) to allow for a larger jump immediately after a match.
+
+## 2. GoCrazy Algorithm: Design and Rationale
+For the creative algorithm task, I designed a hybrid algorithm named **"GoCrazy"**. My goal was to combine the aggressive jumping capability of the **Sunday Algorithm** with a lightweight "hashing" or "guard" mechanism to avoid unnecessary comparisons.
+
+### Rationale & Key Features:
+1.  **Sunday-Based Jumping:**
+    * Standard Boyer-Moore looks at the character causing the mismatch. Sunday, however, looks at the character *right after* the current window (`text[s+m]`).
+    * I utilized a `shift` array of size 256 (optimized for ASCII/English text) to determine how far to jump. If the character after the window doesn't exist in the pattern, I can jump `m+1` steps instantly. This is the "Crazy" part of the speed.
+
+2.  **The "Guard" Mechanism (Light Hash):**
+    * Before starting the expensive inner loop (`O(m)`) to check the whole string, I added a heuristic check: `boolean potentialMatch = (firstT == firstP) && (lastT == lastP);`
+    * **Why?** Comparing two integers (characters) is an `O(1)` operation. If the first or last letters don't match, there is no need to check the middle. This acts as a filter, significantly reducing CPU cycles for non-matching windows.
+
+## 3. Pre-Analysis Strategy
+The `StudentPreAnalysis` class acts as a decision-maker (Dispatcher) to select the best algorithm based on input characteristics. My strategy relies on the "Right Tool for the Right Job" philosophy:
+
+* **Unicode Detection -> Naive:** Since my `GoCrazy` algorithm is optimized for ASCII (size 256 array) for speed, I fallback to `Naive` if the text contains Unicode characters (Turkish chars, emojis, etc.) to ensure correctness and prevent index out-of-bounds errors.
+* **Repetitive Patterns -> KMP:** I implemented an `isRepetitive` check. If a pattern has high repetition (e.g., "AAAA" or "ABABA"), shift-based algorithms (like Boyer Moore) can devolve into `O(N*M)`. Knuth-Morris-Pratt (KMP) is theoretically safer and faster for these worst-case scenarios.
+* **Short Inputs -> Naive:** If the pattern or text is very short (`m < 20`), the overhead of pre-computing shift tables costs more time than just searching naively.
+* **Long Text -> GoCrazy:** For long texts (`n > 500`), the setup cost of the shift table is negligible compared to the time saved by jumping. Thus, `GoCrazy` is the default powerhouse for large inputs.
+
+## 4. Analysis of Results
+Through implementing and testing these strategies, I observed the following:
+
+* **Efficiency of Guards:** In `GoCrazy`, the addition of the first/last character check drastically improved performance on random text. The inner `while` loop runs much less frequently compared to a raw implementation.
+* **Memory vs. Speed:** `Boyer Moore` uses a larger memory footprint (64KB for the Unicode table), while `GoCrazy` is lightweight (256 integers). This makes `GoCrazy` more cache-friendly for standard English texts.
+* **Robustness:** The `PreAnalysis` layer successfully prevents worst-case scenarios. For example, feeding a repetitive DNA sequence triggers KMP, avoiding the slow-down that would occur with simple Sunday or Naive approaches.
+
+## 5. Research & AI Assistance
+During the development process, I utilized AI tools (Gemini) and online resources to clarify specific concepts:
+* **Understanding Indexing:** I used AI to visualize the `text.charAt(s+j)` logic in Boyer-Moore to understand why scanning right-to-left enables larger shifts.
+* **Guard Logic:** I researched optimization techniques for string matching and found that checking boundary characters (Head/Tail) is a common heuristic used in high-performance libraries (like `glibc`'s `strstr` implementation).
+
+---
+**Name:** Ali Berke Erkan
+**Student Number:** 22050111067
+**Gemini chat link: https://gemini.google.com/share/3062bb79b2fe
