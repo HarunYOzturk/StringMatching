@@ -1,3 +1,6 @@
+// Selin Sargın  21005011024
+// Zeynep Merve Karataş  23050131003
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -201,8 +204,142 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // If the pattern is empty, return all positions
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // If the pattern is longer than the text, no matches are possible
+        if (m > n) {
+            return "";
+        }
+
+        // Build the bad character table
+        int[] badChar = new int[65536];
+        for (int i = 0; i < badChar.length; i++) {
+            badChar[i] = -1;
+        }
+        for (int i = 0; i < m; i++) {
+            badChar[pattern.charAt(i)] = i;
+        }
+
+        // Preprocess pattern for good suffix rule
+
+        int[] suffix = computeSuffixes(pattern);
+        int[] L = new int[m];
+        int[] l = new int[m];
+
+        // Initialize L and l tables
+        for (int i = 0; i < m; i++) {
+            L[i] = 0;
+            l[i] = 0;
+        }
+
+        // Build L-table (big-L) based on suffix array
+        for (int i = 0; i < m - 1; i++) {
+            int len = suffix[i];
+            if (len > 0) {
+                L[m - len] = i + 1;
+            }
+        }
+
+        // Build small-l table based on the longest prefix
+        int longestPrefix = 0;
+        for (int i = m - 1; i >= 0; i--) {
+            if (suffix[i] == i + 1) {
+                longestPrefix = i + 1;
+            }
+            l[m - 1 - i] = longestPrefix;
+        }
+
+        // Find all occurrences of pattern in text
+        int s = 0; // shift
+
+        while (s <= n - m) {
+            int j = m - 1;
+
+            // Compare pattern from right to left
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            // Match found
+            if (j < 0) {
+                indices.add(s);
+
+                int shift = (m > 1) ? (m - l[1]) : 1;
+                if (shift <= 0)
+                    shift = 1;
+                s += shift;
+            } else {
+                char bad = text.charAt(s + j);
+
+                // Bad character rule
+                int bcIndex = badChar[bad];
+                int bcShift = j - bcIndex;
+                if (bcShift < 1)
+                    bcShift = 1;
+
+                // Good suffix rule
+                int gsShift;
+                if (j < m - 1) {
+                    gsShift = goodSuffixShift(j, m, L, l);
+                } else {
+                    gsShift = 1;
+                }
+
+                s += Math.max(bcShift, gsShift);
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    // Helper method to compute suffixes for good suffix rule
+    private int[] computeSuffixes(String pattern) {
+        int m = pattern.length();
+        int[] suf = new int[m];
+
+        suf[m - 1] = m;
+        int g = m - 1;
+        int f = 0;
+
+        for (int i = m - 2; i >= 0; i--) {
+            if (i > g && suf[i + m - 1 - f] < i - g) {
+                suf[i] = suf[i + m - 1 - f];
+            } else {
+                if (i < g)
+                    g = i;
+                f = i;
+                while (g >= 0 && pattern.charAt(g) == pattern.charAt(g + m - 1 - f)) {
+                    g--;
+                }
+                suf[i] = f - g;
+            }
+        }
+
+        return suf;
+    }
+
+    // Helper method to calculate good suffix shift
+    private int goodSuffixShift(int j, int m, int[] L, int[] l) {
+        int length = m - 1 - j;
+        if (length == 0)
+            return 1;
+
+        if (L[j + 1] > 0) {
+            return m - L[j + 1];
+        } else {
+            return m - l[j + 1];
+        }
     }
 }
 
@@ -222,9 +359,76 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        List<Integer> list = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        // Handle empty pattern
+        if (m == 0) {
+            for (int i = 0; i <= n; i++)
+                list.add(i);
+            return indicesToString(list);
+        }
+        if (m > n)
+            return "";
+
+        // Pivot: the last character of the pattern
+        char pivot = pattern.charAt(m - 1);
+
+        // Check before pivot if the pattern is longer than 1 character
+        boolean useBefore = false;
+        char beforePivot = 0;
+        if (m >= 2) {
+            beforePivot = pattern.charAt(m - 2);
+            useBefore = true;
+        }
+
+        // Skip rule for fast jumping
+        int skip = Math.max(1, m / 2);
+
+        // Start with the pivot aligned
+        int i = m - 1; 
+
+        while (i < n) {
+
+            // Pivot check
+            if (text.charAt(i) == pivot) {
+
+                // Early rejection for before pivot character
+                if (useBefore) {
+
+                    if (i - 1 < 0) {
+                        i += skip;
+                        continue;
+                    }
+                    if (text.charAt(i - 1) != beforePivot) {
+                        i += skip;
+                        continue;
+                    }
+                }
+
+                // Full pattern match check from right to left
+                boolean ok = true;
+                for (int j = m - 1, k = i; j >= 0; j--, k--) {
+                    if (text.charAt(k) != pattern.charAt(j)) {
+                        ok = false;
+                        break;
+                    }
+                }
+
+                if (ok) {
+                    list.add(i - (m - 1));
+                    i += skip;
+                    continue;
+                }
+
+                i += skip;
+            } else {
+                i += skip;
+            }
+        }
+
+        return indicesToString(list);
     }
 }
-
-
