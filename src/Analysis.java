@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class Naive extends Solution {
@@ -196,13 +197,65 @@ class BoyerMoore extends Solution {
         System.out.println("BoyerMoore registered");
     }
 
+    //
     public BoyerMoore() {
     }
+    // Using 65536 to cover full Unicode range, though it uses more memory.
+    private static final int ALPHABET_SIZE = 65536;
+    // Table to store the last occurrence of each character in the pattern amount
+    private final int[] badCharTable = new int[ALPHABET_SIZE];
+
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+
+        int textLen = text.length();
+        int patternLen = pattern.length();
+
+        if(patternLen == 0){
+            for (int i = 0; i <= textLen; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        if(patternLen > textLen){
+            return "";
+        }
+        // Preprocessing: Fill the table with -1
+        Arrays.fill(badCharTable, -1);
+
+        // Record the last position of each character in the pattern
+        for (int i = 0; i < patternLen; i++) {
+            badCharTable[pattern.charAt(i)] = i;
+        }
+        int i = 0;
+
+        while(i <= textLen - patternLen){
+            int j = patternLen - 1;
+
+            // Scan from right to left (Characteristic of Boyer-Moore)
+            while (j >= 0 && pattern.charAt(j) == text.charAt(i + j)) {
+                j--;
+            }
+            if(j < 0){
+                indices.add(i);
+                // Pattern found. Shift pattern so that the next character in text aligns
+                // with its last occurrence in pattern.
+                if (i + patternLen < textLen) {
+                    i += patternLen - badCharTable[text.charAt(i + patternLen)];
+                } else {
+                    i += 1;
+                }
+
+            }else{
+                // Mismatch! Shift based on the Bad Character Rule
+                // We align the bad character in text with its last occurrence in pattern
+                int badCharShift = j - badCharTable[text.charAt(i + j)];
+                i += Math.max(1, badCharShift);
+            }
+        }
+        return  indicesToString(indices);
     }
 }
 
@@ -219,10 +272,8 @@ class GoCrazy extends Solution {
 
     public GoCrazy() {
     }
-
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
         throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
     }
 }
