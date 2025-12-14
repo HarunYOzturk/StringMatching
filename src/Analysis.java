@@ -1,5 +1,10 @@
+//Reyyan Naz Doğan - 22050111012
+//Murat Emir Öncül - 22050111057 
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 class Naive extends Solution {
     static {
@@ -201,8 +206,115 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // An empty pattern matches at every position
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+
+        // if pattern is longer than text, no match
+        if (m > n) {
+            return "";
+        }
+
+        // Bad Character Rule: for each character in pattern, store the last position
+        Map<Character, Integer> badCharTable = preprocessBadCharacter(pattern, m);
+
+        // Good Suffix Rule: for each suffix in pattern, store the best shift
+        int[] goodSuffixTable = preprocessGoodSuffix(pattern, m);
+
+        // Search loop - slide pattern over text
+        int shift = 0;
+        while (shift <= n - m) {
+            int j = m - 1;
+
+            // compare from right to left
+            while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                // found a match
+                indices.add(shift);
+                // shift to the next possible match
+                shift += goodSuffixTable[0];
+            } else {
+                // no match - select the larger shift from Bad Character and Good Suffix rules
+                char mismatchChar = text.charAt(shift + j);
+                int badCharShift = j - badCharTable.getOrDefault(mismatchChar, -1);
+                int goodSuffixShift = goodSuffixTable[j + 1];
+
+                shift += Math.max(badCharShift, goodSuffixShift);
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    /**
+     * Bad Character Rule Preprocessing
+     * 
+     * For each character in pattern, store the last position.
+     * If character is not in pattern, returns -1 (not found in HashMap).
+     * 
+     * Example: pattern = "ABCAB"
+     * A -> 3, B -> 4, C -> 2
+     */
+    private Map<Character, Integer> preprocessBadCharacter(String pattern, int m) {
+        Map<Character, Integer> badCharTable = new HashMap<>();
+        for (int i = 0; i < m; i++) {
+            badCharTable.put(pattern.charAt(i), i);
+        }
+        return badCharTable;
+    }
+
+    private int[] preprocessGoodSuffix(String pattern, int m) {
+        int[] goodSuffixTable = new int[m + 1];
+        int[] borderPos = new int[m + 1];
+        int[] shift = new int[m + 1];
+
+        // Case 1: Strong Good Suffix Rule
+        // Calculate border positions from right to left
+        int i = m;
+        int j = m + 1;
+        borderPos[i] = j;
+
+        while (i > 0) {
+            // while characters do not match, go to the next border
+            while (j <= m && pattern.charAt(i - 1) != pattern.charAt(j - 1)) {
+                if (shift[j] == 0) {
+                    shift[j] = j - i;
+                }
+                j = borderPos[j];
+            }
+            i--;
+            j--;
+            borderPos[i] = j;
+        }
+
+        // Case 2: If a part of the suffix matches a prefix of the pattern
+        j = borderPos[0];
+        for (i = 0; i <= m; i++) {
+            if (shift[i] == 0) {
+                shift[i] = j;
+            }
+            if (i == j) {
+                j = borderPos[j];
+            }
+        }
+
+        // Copy result to goodSuffixTable
+        for (int k = 0; k <= m; k++) {
+            goodSuffixTable[k] = shift[k];
+        }
+
+        return goodSuffixTable;
     }
 }
 
@@ -226,5 +338,3 @@ class GoCrazy extends Solution {
         throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
     }
 }
-
-
