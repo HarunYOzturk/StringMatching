@@ -1,0 +1,7 @@
+{
+  "name": "Complex Overlap",
+  "text": "AABAABAABAABAABAAB",
+  "pattern": "AABAAB",
+  "expected": "0,3,6,9,12"
+}
+

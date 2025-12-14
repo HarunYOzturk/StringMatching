@@ -1,0 +1,7 @@
+{
+  "name": "Near Matches",
+  "text": "ABCDABCEABCFABCGABCH",
+  "pattern": "ABCH",
+  "expected": "16"
+}
+

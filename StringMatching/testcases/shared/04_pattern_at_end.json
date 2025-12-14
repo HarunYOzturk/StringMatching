@@ -1,0 +1,7 @@
+{
+  "name": "Pattern at End",
+  "text": "HELLO WORLD",
+  "pattern": "WORLD",
+  "expected": "6"
+}
+

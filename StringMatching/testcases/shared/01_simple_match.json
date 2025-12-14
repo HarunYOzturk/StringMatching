@@ -1,0 +1,7 @@
+{
+  "name": "Simple Match",
+  "text": "AABAACAADAABAABA",
+  "pattern": "AABA",
+  "expected": "0,9,12"
+}
+

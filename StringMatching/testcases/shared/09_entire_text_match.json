@@ -1,0 +1,7 @@
+{
+  "name": "Entire Text Match",
+  "text": "PATTERN",
+  "pattern": "PATTERN",
+  "expected": "0"
+}
+

@@ -1,0 +1,7 @@
+{
+  "name": "Pattern Longer Than Text",
+  "text": "ABC",
+  "pattern": "ABCDEF",
+  "expected": ""
+}
+

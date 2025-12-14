@@ -1,0 +1,7 @@
+{
+  "name": "Palindrome Pattern",
+  "text": "ABCDEFGHIJKLMNOPQRSTUVWXYZRACECARZYXWVUTSRQPONMLKJIHGFEDCBARACECAR",
+  "pattern": "RACECAR",
+  "expected": "26,59"
+}
+

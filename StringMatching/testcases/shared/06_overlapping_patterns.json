@@ -1,0 +1,7 @@
+{
+  "name": "Overlapping Patterns",
+  "text": "AAAAAAA",
+  "pattern": "AAA",
+  "expected": "0,1,2,3,4"
+}
+

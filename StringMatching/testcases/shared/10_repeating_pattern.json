@@ -1,0 +1,7 @@
+{
+  "name": "Repeating Pattern",
+  "text": "ABABABABABAB",
+  "pattern": "ABAB",
+  "expected": "0,2,4,6,8"
+}
+
