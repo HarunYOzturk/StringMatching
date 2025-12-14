@@ -41,23 +41,40 @@ class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int textLen = text.length();
+        int patternLen = pattern.length();
+
+        if (patternLen <= 3 || patternLen == 0 || textLen == 0 || textLen<= patternLen) {
+            return "Naive"; // Fast for very short patterns
+        } if (hasRepeatingPrefix(pattern)) {
+            return "KMP"; // Good for patterns with repeating prefixes
+        }if (patternLen > 10 && textLen > 1000 ) {
+            return "RabinKarp"; // Good for long patterns in long texts
+        }
+        if (patternLen > 10 && textLen > 10000) {
+            return "BoyerMoore";
+        }
+        else {
+            return "Naive"; // Generally efficient
+        }
+
+        //return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
     }
-    
+
     @Override
     public String getStrategyDescription() {
         return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+    }
+    private boolean hasRepeatingPrefix(String pattern) {
+        if (pattern.length() < 2) return false;
+
+        // Check if first character repeats
+        char first = pattern.charAt(0);
+        int count = 0;
+        for (int i = 0; i < Math.min(pattern.length(), 5); i++) {
+            if (pattern.charAt(i) == first) count++;
+        }
+        return count >= 3;
     }
 }
 

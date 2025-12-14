@@ -197,12 +197,58 @@ class BoyerMoore extends Solution {
     }
 
     public BoyerMoore() {
+
     }
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        int textSize = text.length();
+        int patternSize = pattern.length();
+        List<Integer> indices = new ArrayList<>();
+        if (patternSize == 0) {
+            for (int i = 0; i <= textSize; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+        int[] bmBc = badCase(pattern,patternSize);
+        int swipe = 0;
+        while(swipe <= textSize -patternSize ){
+            int j = patternSize - 1;
+            while (j >=0 && pattern.charAt(j) == text.charAt(swipe +j)){
+                j -=1;
+            }
+            if (j < 0){
+                indices.add(swipe);
+
+                if(swipe + patternSize < textSize){
+                    swipe = swipe + (patternSize- bmBc[text.charAt(swipe+patternSize)]);
+                }
+                else{
+                    swipe += 1;
+                }
+            }
+            else{
+                int badChar = text.charAt(swipe + j);
+                int lastIndex = bmBc[badChar];
+                swipe += Math.max(1, j - lastIndex);
+            }
+        }
+        return indicesToString(indices);
+
+        //throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+    }
+    public int[] badCase(String pattern, int patternSize){
+        int alphabetSize = 65536;
+        int bmBc[] = new int[alphabetSize];
+        for(int i =0; i < alphabetSize;i++){
+            bmBc[i] = -1;
+        }
+        for (int i = 0; i < patternSize; i++){
+            char c = pattern.charAt(i);
+            if (c < alphabetSize) {
+                bmBc[c] = i;
+            }
+        }
+        return bmBc;
     }
 }
 
