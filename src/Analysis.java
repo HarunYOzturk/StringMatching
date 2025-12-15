@@ -196,15 +196,62 @@ class BoyerMoore extends Solution {
         System.out.println("BoyerMoore registered");
     }
 
-    public BoyerMoore() {
-    }
+    public BoyerMoore() { }
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List indices = new ArrayList<>();
+
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) indices.add(i);
+            return indicesToString(indices);
+        }
+
+        if (m > n) return "";
+
+        int[] badChar = buildBadChar(pattern);
+
+        int shift = 0;
+
+        while (shift <= n - m) {
+            int j = m - 1;
+
+            while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                indices.add(shift);
+
+                if (shift + m < n) {
+                    shift += m - badChar[text.charAt(shift + m)];
+                } else {
+                    shift += 1;
+                }
+            } else {
+                int bcIndex = badChar[text.charAt(shift + j)];
+                int move = j - bcIndex;
+                if (move < 1) move = 1;
+                shift += move;
+            }
+        }
+
+        return indicesToString(indices);
+    }
+
+    private int[] buildBadChar(String pattern) {
+        int[] bad = new int[Character.MAX_VALUE + 1];
+
+        for (int i = 0; i < bad.length; i++) bad[i] = -1;
+        for (int i = 0; i < pattern.length(); i++) bad[pattern.charAt(i)] = i;
+
+        return bad;
     }
 }
+
 
 /**
  * TODO: Implement your own creative string matching algorithm
@@ -217,14 +264,20 @@ class GoCrazy extends Solution {
         System.out.println("GoCrazy registered");
     }
 
-    public GoCrazy() {
-    }
+    public GoCrazy() { }
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        int m = pattern.length();
+        Solution algo;
+
+        if (m <= 2) algo = new Naive();
+        else if (m <= 10) algo = new KMP();
+        else algo = new BoyerMoore();
+
+        return algo.Solve(text, pattern);
     }
 }
+
 
 

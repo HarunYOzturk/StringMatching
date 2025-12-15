@@ -38,28 +38,62 @@ public abstract class PreAnalysis {
  * This is where students write their pre-analysis logic
  */
 class StudentPreAnalysis extends PreAnalysis {
-    
+
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
-        
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        int n = text.length();
+        int m = pattern.length();
+
+        if (m == 0) return "Naive";
+        if (n == 0) return "Naive";
+
+        if (m <= 3 || n <= 30) return "Naive";
+
+        if (hasRepeatingPrefix(pattern) || hasHighPrefixFunction(pattern)) return "KMP";
+
+        if (m > 25 && n > 2000) return "BoyerMoore";
+
+        if (m > 15 && n > 500) return "RabinKarp";
+
+        return "GoCrazy";
     }
-    
+
+    private boolean hasRepeatingPrefix(String pattern) {
+        int len = Math.min(pattern.length(), 10);
+        char c0 = pattern.charAt(0);
+        int count = 0;
+        for (int i = 0; i < len; i++) {
+            if (pattern.charAt(i) == c0) count++;
+        }
+        return count >= len / 2;
+    }
+
+    private boolean hasHighPrefixFunction(String pattern) {
+        int m = pattern.length();
+        int[] pi = new int[m];
+        int k = 0;
+        for (int i = 1; i < m; i++) {
+            while (k > 0 && pattern.charAt(k) != pattern.charAt(i)) {
+                k = pi[k - 1];
+            }
+            if (pattern.charAt(k) == pattern.charAt(i)) {
+                k++;
+            }
+            pi[i] = k;
+        }
+        int maxPi = 0;
+        for (int v : pi) {
+            if (v > maxPi) maxPi = v;
+        }
+        return maxPi >= m / 3;
+    }
+
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Chooses Naive for short cases, KMP for patterns with repeating prefix, BoyerMoore or RabinKarp for long patterns in long texts, and GoCrazy for medium sized cases.";
     }
 }
+
 
 
 /**
