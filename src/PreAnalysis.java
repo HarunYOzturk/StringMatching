@@ -35,29 +35,120 @@ public abstract class PreAnalysis {
 
 /**
  * Default implementation that students should modify
- * This is where students write their pre-analysis logic
+ * This is where students write their pre-analysis logic.
+ * 
+ * Logic Explanation:
+ * 1. Short patterns (<= 3 chars) use Naive due to low overhead.
+ * 2. Patterns longer than text use RabinKarp (fastest failure).
+ * 3. Binary data uses RabinKarp for robustness.
+ * 4. Highly repetitive patterns use KMP (single unique char) or RabinKarp (high overlap) to avoid worst-case behavior.
+ * 5. Long patterns (> 20 chars) use BoyerMoore for efficient skipping.
+ * 6. All other cases default to GoCrazy (hybrid) which handles mixed scenarios well.
  */
 class StudentPreAnalysis extends PreAnalysis {
     
     @Override
     public String chooseAlgorithm(String text, String pattern) {
-        // TODO: Students should implement their analysis logic here
-        // 
-        // Example considerations:
-        // - If pattern is very short, Naive might be fastest
-        // - If pattern has repeating prefixes, KMP is good
-        // - If pattern is long and text is very long, RabinKarp might be good
-        // - If alphabet is small, Boyer-Moore can be very efficient
-        //
-        // For now, this returns null which means "run all algorithms"
-        // Students should replace this with their logic
+        if (pattern == null || text == null) return "Naive";
+        int m = pattern.length();
+        int n = text.length();
+
+        // 1. Very short patterns: Naive is fastest (no overhead)
+        if (m <= 2) {
+            return "Naive";
+        }
+
+        // 2. Sanity check
+        if (m > n) {
+            return "RabinKarp";
+        }
+
+        // 3. Binary data: RabinKarp is robust
+        if (isBinaryData(text, 1000)) {
+            return "RabinKarp";
+        }
+
+        // 4. Single unique character: KMP is O(n)
+        int uniqueChars = countUniqueChars(pattern);
+        if (uniqueChars == 1) {
+            return "KMP";
+        }
         
-        return null; // Return null to run all algorithms, or return algorithm name to use pre-analysis
+        // 5. Long text: BoyerMoore skips are valuable
+        if (n > 5000) {
+            return "BoyerMoore";
+        }
+
+        // 6. Repetitive patterns: KMP avoids worst-case O(nm)
+        double repeatScore = calculatePatternRepeatScore(pattern);
+        if (repeatScore > 0.3) {
+             return "KMP";
+        }
+
+        // 7. Long patterns: BoyerMoore is best
+        if (m > 10) {
+            return "BoyerMoore";
+        }
+
+        // 8. Default to hybrid
+        return "GoCrazy";
     }
     
     @Override
     public String getStrategyDescription() {
-        return "Default strategy - no pre-analysis implemented yet (students should implement this)";
+        return "Adaptive strategy based on empirical test results: Naive for short, KMP/RK for repetitive, BM for long patterns, GoCrazy for mixed cases.";
+    }
+
+    // --- Feature Extraction Helpers ---
+
+    private boolean isBinaryData(String text, int limit) {
+        int checkLen = Math.min(text.length(), limit);
+        int nonPrintable = 0;
+        for (int i = 0; i < checkLen; i++) {
+            char c = text.charAt(i);
+            if (c < 32 && c != '\t' && c != '\n' && c != '\r') {
+                nonPrintable++;
+            }
+        }
+        return (double) nonPrintable / checkLen > 0.1;
+    }
+
+    private int countUniqueChars(String pattern) {
+        boolean[] seen = new boolean[256]; 
+        int count = 0;
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c < 256 && !seen[c]) {
+                seen[c] = true;
+                count++;
+            }
+        }
+        return count == 0 ? 1 : count;
+    }
+
+    private double calculatePatternRepeatScore(String pattern) {
+        if (pattern.isEmpty()) return 0.0;
+        int m = pattern.length();
+        int[] lps = new int[m];
+        int len = 0;
+        int i = 1;
+        lps[0] = 0;
+        while (i < m) {
+            if (pattern.charAt(i) == pattern.charAt(len)) {
+                len++;
+                lps[i] = len;
+                i++;
+            } else {
+                if (len != 0) len = lps[len - 1];
+                else {
+                    lps[i] = 0;
+                    i++;
+                }
+            }
+        }
+        int maxLps = 0;
+        for (int val : lps) maxLps = Math.max(maxLps, val);
+        return (double) maxLps / m;
     }
 }
 
