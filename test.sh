@@ -4,7 +4,7 @@
 # Main entry point for running tests
 
 echo "Compiling Java files..."
-javac src/*.java
+javac -encoding UTF-8 src/*.java
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"

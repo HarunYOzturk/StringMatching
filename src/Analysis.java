@@ -201,15 +201,78 @@ class BoyerMoore extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement Boyer-Moore algorithm here
-        throw new UnsupportedOperationException("Boyer-Moore algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // Handle edge cases
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        if (m > n) {
+            return "";
+        }
+
+        // Bad Character Heuristic Preprocessing
+        // Use HashMap to handle large alphabets efficiently without huge array overhead
+        java.util.Map<Character, Integer> badChar = new java.util.HashMap<>();
+
+        // Fill the actual value of last occurrence of a character
+        for (int i = 0; i < m; i++) {
+            badChar.put(pattern.charAt(i), i);
+        }
+
+        int s = 0; // s is shift of the pattern with respect to text
+        while (s <= (n - m)) {
+            int j = m - 1;
+
+            // Keep reducing index j of pattern while characters of
+            // pattern and text are matching at this shift s
+            while (j >= 0 && pattern.charAt(j) == text.charAt(s + j)) {
+                j--;
+            }
+
+            // If the pattern is present at current shift, then index j will become -1
+            if (j < 0) {
+                indices.add(s);
+                
+                // Shift the pattern so that the next character in text aligns with the last 
+                // occurrence of it in pattern.
+                // The condition s+m < n is necessary for the case when pattern occurs at the end of text
+                int lastCharShift = 1;
+                if (s + m < n) {
+                    char nextChar = text.charAt(s + m);
+                    lastCharShift = m - badChar.getOrDefault(nextChar, -1);
+                }
+                s += lastCharShift;
+            } else {
+                // Shift the pattern so that the bad character in text aligns with the last 
+                // occurrence of it in pattern.
+                char badCharInText = text.charAt(s + j);
+                int badCharIndex = badChar.getOrDefault(badCharInText, -1);
+                s += Math.max(1, j - badCharIndex);
+            }
+        }
+
+        return indicesToString(indices);
     }
 }
 
 /**
- * TODO: Implement your own creative string matching algorithm
- * This is a homework assignment for students
- * Be creative! Try to make it efficient for specific cases
+ * GoCrazy Algorithm Implementation
+ * Strategy: Boyer-Moore-Horspool Algorithm
+ * 
+ * Rationale:
+ * The Horspool algorithm is a simplification of the Boyer-Moore algorithm.
+ * It trades the complexity of the Good Suffix rule for a simpler logic that
+ * often performs better in practice for random text and large alphabets.
+ * It uses a precomputed table based on the last occurrence of each character
+ * in the pattern (excluding the last character itself for the shift calculation).
+ * When a mismatch occurs, or even after a full match, the shift is determined
+ * solely by the character in the text that corresponds to the last character of the pattern.
  */
 class GoCrazy extends Solution {
     static {
@@ -222,8 +285,52 @@ class GoCrazy extends Solution {
 
     @Override
     public String Solve(String text, String pattern) {
-        // TODO: Students should implement their own creative algorithm here
-        throw new UnsupportedOperationException("GoCrazy algorithm not yet implemented - this is your homework!");
+        List<Integer> indices = new ArrayList<>();
+        int n = text.length();
+        int m = pattern.length();
+
+        // Handle edge cases
+        if (m == 0) {
+            for (int i = 0; i <= n; i++) {
+                indices.add(i);
+            }
+            return indicesToString(indices);
+        }
+        if (m > n) {
+            return "";
+        }
+
+        // Preprocessing for Horspool
+        // Use HashMap to avoid O(Sigma) initialization cost
+        java.util.Map<Character, Integer> shiftTable = new java.util.HashMap<>();
+        
+        // Fill the table with the distance from the end of the pattern
+        // for each character in the pattern (excluding the last one)
+        for (int i = 0; i < m - 1; i++) {
+            shiftTable.put(pattern.charAt(i), m - 1 - i);
+        }
+
+        int i = 0;
+        while (i <= n - m) {
+            int j = m - 1;
+            
+            // Compare pattern from right to left
+            while (j >= 0 && text.charAt(i + j) == pattern.charAt(j)) {
+                j--;
+            }
+
+            if (j < 0) {
+                // Match found
+                indices.add(i);
+            }
+
+            // Shift based on the character in the text aligned with the last character of the pattern
+            // If character is not in table, shift by full pattern length (m)
+            char lastCharInWindow = text.charAt(i + m - 1);
+            i += shiftTable.getOrDefault(lastCharInWindow, m);
+        }
+
+        return indicesToString(indices);
     }
 }
 
